@@ -493,3 +493,134 @@ def download_report(payload: Dict[str, Any]):
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=satquery_audit_trace.json"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Carto Dark Map & Geospatial Layer Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/map/carto_dark", summary="Retrieve CARTO Dark Matter Basemap API configuration and metadata")
+def get_carto_dark_config():
+    """Returns official CARTO Dark Matter Basemap specification, tile endpoints, and visual styling parameters."""
+    return {
+        "status": "success",
+        "layer_id": "carto_dark",
+        "name": "CARTO Dark Matter Basemap",
+        "description": "High-contrast dark geospatial basemap optimized for satellite telemetry and spatial grounding visualization.",
+        "tile_url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "proxy_url_template": "/api/map/tiles/carto_dark/{z}/{x}/{y}.png",
+        "subdomains": ["a", "b", "c", "d"],
+        "attribution": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>",
+        "max_zoom": 20,
+        "min_zoom": 0,
+        "theme": "dark",
+        "projection": "EPSG:3857 (Web Mercator)",
+        "features": [
+            "High-contrast dark aesthetics for infrared & NDVI overlays",
+            "Vector road network with suppressed labels for clean telemetry",
+            "Sub-pixel Retina 2x tiles supported via {r} parameter",
+            "Edge-cacheable proxy endpoints via /api/map/tiles/carto_dark/{z}/{x}/{y}.png",
+        ],
+        "recommended_center": {
+            "lat": 12.9716,
+            "lon": 77.5946,
+            "zoom": 12,
+            "label": "ISRO Telemetry & Space Center (Bengaluru)",
+        },
+    }
+
+
+@router.get("/map/layers", summary="List all available geospatial basemap layers")
+def get_map_layers():
+    """Returns the catalog of configured basemap layers including Carto Dark, Esri Satellite, and OpenStreetMap."""
+    return {
+        "status": "success",
+        "default_layer": "carto_dark",
+        "layers": [
+            {
+                "id": "carto_dark",
+                "name": "🏙️ Carto Dark GIS",
+                "url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                "proxy_url": "/api/map/tiles/carto_dark/{z}/{x}/{y}.png",
+                "attribution": "&copy; OpenStreetMap contributors &copy; CARTO",
+                "subdomains": ["a", "b", "c", "d"],
+                "max_zoom": 20,
+                "dark_theme": True,
+                "description": "Dark basemap optimized for contrast and night/satellite visualizations.",
+            },
+            {
+                "id": "esri_satellite",
+                "name": "🛰️ Esri Satellite (True High-Res)",
+                "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                "attribution": "Tiles &copy; Esri &mdash; World Imagery (High Resolution)",
+                "max_zoom": 19,
+                "dark_theme": False,
+                "description": "True-color 0.5m-15m global satellite and aerial photography.",
+            },
+            {
+                "id": "osm",
+                "name": "🗺️ OpenStreetMap Standard",
+                "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "attribution": "&copy; OpenStreetMap contributors",
+                "max_zoom": 19,
+                "dark_theme": False,
+                "description": "Crowdsourced global topographic and street-level cartography.",
+            },
+        ],
+    }
+
+
+@router.get("/map/tiles/carto_dark/{z}/{x}/{tile_y}", summary="Proxy tile endpoint for CARTO Dark Basemap")
+def get_carto_dark_tile(z: int, x: int, tile_y: str):
+    """
+    Fetches and edge-caches Carto Dark map tiles.
+    Accepts coordinates in {z}/{x}/{y} or {z}/{x}/{y}.png format.
+    Falls back gracefully to a synthetic dark grid tile if network is unreachable.
+    """
+    import urllib.request
+
+    y_str = tile_y.replace(".png", "")
+    try:
+        y = int(y_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid tile coordinate")
+
+    if z < 0 or z > 22 or x < 0 or y < 0:
+        raise HTTPException(status_code=400, detail="Tile coordinate out of bounds")
+
+    subdomain = ["a", "b", "c", "d"][(x + y + z) % 4]
+    url = f"https://{subdomain}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+    headers = {
+        "User-Agent": "SatQuery-AI-Geospatial-Tile-Proxy/1.0",
+        "Accept": "image/png,image/*;q=0.8",
+    }
+
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            tile_data = resp.read()
+            return Response(
+                content=tile_data,
+                media_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400, s-maxage=604800",
+                    "X-Tile-Source": "CARTO-CDN",
+                },
+            )
+    except Exception:
+        # Generate synthetic dark tile fallback (256x256)
+        from PIL import Image, ImageDraw
+        img = Image.new("RGBA", (256, 256), (18, 22, 28, 255))
+        draw = ImageDraw.Draw(img)
+        draw.rectangle([0, 0, 255, 255], outline=(32, 40, 52, 255), width=1)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return Response(
+            content=buf.getvalue(),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=3600",
+                "X-Tile-Source": "SatQuery-Synthetic-Fallback",
+            },
+        )
+

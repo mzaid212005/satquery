@@ -587,6 +587,11 @@ function initLeafletMap() {
     }
   );
 
+  const cartoDarkProxy = L.tileLayer("/api/map/tiles/carto_dark/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors &copy; CARTO (SatQuery API)",
+    maxZoom: 20,
+  });
+
   const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors",
     maxZoom: 19,
@@ -596,11 +601,23 @@ function initLeafletMap() {
 
   const baseMaps = {
     "🛰️ Esri Satellite (True High-Res)": esriSatellite,
-    "🏙️ Carto Dark GIS": cartoDark,
+    "🏙️ Carto Dark GIS (Direct CDN)": cartoDark,
+    "⚡ Carto Dark GIS (SatQuery Proxy API)": cartoDarkProxy,
     "🗺️ OpenStreetMap": osm,
   };
 
   L.control.layers(baseMaps, null, { position: "topright" }).addTo(leafletMap);
+
+  // Pre-fetch Carto Dark metadata from API to verify status
+  fetch("/api/map/carto_dark")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((cfg) => {
+      if (cfg && cfg.status === "success") {
+        console.log("[SatQuery AI] Carto Dark Basemap API Connected:", cfg.name);
+      }
+    })
+    .catch((err) => console.warn("[SatQuery AI] Carto Dark API status check:", err));
+
 
   // Clean interactive point-and-query click handler
   leafletMap.on("click", (e) => {

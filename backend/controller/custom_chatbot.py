@@ -1063,6 +1063,60 @@ class CustomSatChatbot:
                 "metadata": {"domain": "urban_transportation"},
             }
 
+        # 5b. CARTO Dark Map & Geospatial Layer API
+        elif any(w in q_lower for w in [
+            "carto dark", "dark map", "carto_dark", "carto basemap", "dark matter map", "map api", "tiles api",
+            "ಕಾರ್ಟೊ ಡಾರ್ಕ್", "ಡಾರ್ಕ್ ಮ್ಯಾಪ್", "ಬೇಸ್‌ಮ್ಯಾಪ್",
+            "कार्टो डार्क", "डार्क मैप", "बेसमैप",
+        ]):
+            if lang_code == "kn":
+                reply = (
+                    "### 🏙️ CARTO ಡಾರ್ಕ್ ಮ್ಯಾಟರ್ GIS ಬೇಸ್‌ಮ್ಯಾಪ್ ಮತ್ತು ಟೈಲ್ API\n\n"
+                    "SatQuery AI **CARTO ಡಾರ್ಕ್ ಮ್ಯಾಟರ್** ಉನ್ನತ-ಕಾಂಟ್ರಾಸ್ಟ್ ಜಿಯೋಸ್ಪೇಷಿಯಲ್ ಬೇಸ್‌ಮ್ಯಾಪ್‌ಗಾಗಿ ಮೀಸಲಾದ API ಎಂಡ್‌ಪಾಯಿಂಟ್‌ಗಳನ್ನು ಒದಗಿಸುತ್ತದೆ:\n\n"
+                    "#### 1. ಲಭ್ಯವಿರುವ API ಎಂಡ್‌ಪಾಯಿಂಟ್‌ಗಳು:\n"
+                    "- **`GET /api/map/carto_dark`**: CARTO ಡಾರ್ಕ್ ಮೆಟಾಡೇಟಾ, ಟೈಲ್ ಟೆಂಪ್ಲೇಟ್‌ಗಳು, ಗುಣಲಕ್ಷಣಗಳು ಮತ್ತು ಜೂಮ್ ಮಿತಿಗಳನ್ನು ಪಡೆಯುತ್ತದೆ.\n"
+                    "- **`GET /api/map/layers`**: ಸಂಪೂರ್ಣ GIS ಬೇಸ್‌ಮ್ಯಾಪ್ ಲೇಯರ್‌ಗಳ ಪಟ್ಟಿಯನ್ನು ನೀಡುತ್ತದೆ (Carto Dark, Esri Satellite, OpenStreetMap).\n"
+                    "- **`GET /api/map/tiles/carto_dark/{z}/{x}/{y}.png`**: ಹೈ-ಸ್ಪೀಡ್ ಎಡ್ಜ್-ಕ್ಯಾಶ್ ಟೈಲ್ ಪ್ರಾಕ್ಸಿ ಎಂಡ್‌ಪಾಯಿಂಟ್.\n\n"
+                    "#### 2. ರಿಮೋಟ್ ಸೆನ್ಸಿಂಗ್‌ನಲ್ಲಿ ಪ್ರಮುಖ ಅನುಕೂಲಗಳು:\n"
+                    "- **ಉನ್ನತ ಕಾಂಟ್ರಾಸ್ಟ್**: ಕಪ್ಪು ಹಿನ್ನೆಲೆಯು (`#12161c`) NDVI ಹಸಿರು, ಪ್ರವಾಹ ನೀಲಿ ಮತ್ತು ಕೃಷಿ ಪಾರ್ಸೆಲ್ ಬೌಂಡಿಂಗ್ ಬಾಕ್ಸ್‌ಗಳನ್ನು ಅತ್ಯಂತ ಸ್ಪಷ್ಟವಾಗಿ ತೋರಿಸುತ್ತದೆ.\n"
+                    "- **ಸ್ಪಷ್ಟ ಟೆಲಿಮೆಟ್ರಿ**: ರಸ್ತೆ ನೆಟ್‌ವರ್ಕ್‌ಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಪ್ರದರ್ಶಿಸಿ ಸ್ಯಾಟಲೈಟ್ ಓವರ್‌ಲೇಗಳ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಸುಲಭಗೊಳಿಸುತ್ತದೆ.\n\n"
+                    "👉 *ಲೈವ್ Carto Dark ಬೇಸ್‌ಮ್ಯಾಪ್ ಮತ್ತು ಪಾಯಿಂಟ್ ಡಯಾಗ್ನೋಸ್ಟಿಕ್ಸ್‌ಗಾಗಿ ಮೇಲ್ಭಾಗದಲ್ಲಿರುವ **🌍 Interactive GIS Map** ಟ್ಯಾಬ್ ಕ್ಲಿಕ್ ಮಾಡಿ.*"
+                )
+            elif lang_code == "hi":
+                reply = (
+                    "### 🏙️ CARTO डार्क मैटर GIS बेसमैप और टाइल API\n\n"
+                    "SatQuery AI **CARTO डार्क मैटर** हाई-कंट्रास्ट जियोस्पेशियल बेसमैप के लिए समर्पित API एंडपॉइंट्स प्रदान करता है:\n\n"
+                    "#### 1. उपलब्ध API एंडपॉइंट्स:\n"
+                    "- **`GET /api/map/carto_dark`**: CARTO डार्क मेटाडेटा, टाइल टेम्प्लेट और ज़ूम सीमाओं को पुनः प्राप्त करता है।\n"
+                    "- **`GET /api/map/layers`**: सभी उपलब्ध GIS बेसमैप लेयर्स की सूची प्रदान करता है।\n"
+                    "- **`GET /api/map/tiles/carto_dark/{z}/{x}/{y}.png`**: हाई-स्पीड एज-कैश टाइल प्रॉक्सी एंडपॉइंट।\n\n"
+                    "#### 2. रिमोट सेंसिंग में मुख्य लाभ:\n"
+                    "- **उच्च कंट्रास्ट**: डार्क बैकग्राउंड NDVI हरियाली, जल निकायों और बाउंडिंग बॉक्स को स्पष्ट रूप से दिखाता है।\n"
+                    "- **स्वच्छ टेलीमेट्री**: सैटेलाइट विज़ुअलाइज़ेशन के दौरान विज़ुअल क्लटर को कम करता है।\n\n"
+                    "👉 *लाइव Carto Dark बेसमैप और पॉइंट डायग्नोस्टिक्स के लिए ऊपर **🌍 Interactive GIS Map** पर क्लिक करें।*"
+                )
+            else:
+                reply = (
+                    "### 🏙️ CARTO Dark Matter GIS Basemap & Tile API\n\n"
+                    "SatQuery AI provides native integration and dedicated API endpoints for the **CARTO Dark Matter** high-contrast geospatial basemap:\n\n"
+                    "#### 1. Available API Endpoints:\n"
+                    "- **`GET /api/map/carto_dark`**: Fetches official CARTO Dark metadata, tile templates, attribution, and zoom parameters.\n"
+                    "- **`GET /api/map/layers`**: Retrieves the complete catalog of GIS basemap layers (`carto_dark`, `esri_satellite`, `osm`).\n"
+                    "- **`GET /api/map/tiles/carto_dark/{z}/{x}/{y}.png`**: High-speed, edge-cacheable proxy tile endpoint with synthetic dark fallback.\n\n"
+                    "#### 2. Visual & Scientific Benefits in Remote Sensing:\n"
+                    "- **Maximized Contrast**: Dark background (`#12161c` to `#222222`) ensures fluorescent false-color overlays (NDVI crop vigor green, water blue, flood inundation cyan) stand out with crystal clarity.\n"
+                    "- **High Telemetry Legibility**: Road networks and building footprints are subtly rendered to prevent visual clutter during bounding box and heatmap inspection.\n"
+                    "- **Sub-Pixel Retina Support**: Supports `2x` resolution tiles via `{r}` parameters up to **Zoom Level 20**.\n\n"
+                    "👉 *Switch to the **🌍 Interactive GIS Map** view in the top bar to explore the live Carto Dark basemap with point-and-query diagnostics.*"
+                )
+            return {
+                "reply": reply,
+                "task_type": "carto_dark_map_api",
+                "confidence": 0.99,
+                "overlays": {},
+                "metadata": {"domain": "geospatial_cartography", "layer_id": "carto_dark"},
+            }
+
         # 6. Satellite Sensors Comparison (Sentinel vs Cartosat vs RISAT)
         elif any(w in q_lower for w in [
             "cartosat", "risat", "oceansat", "spatial resolution", "spectral resolution", "sentinel-2 vs", "specifications",
