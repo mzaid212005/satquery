@@ -1,0 +1,35 @@
+{
+  "admin@satquery.ai": {
+    "id": "usr_admin_001",
+    "email": "admin@satquery.ai",
+    "full_name": "SatQuery System Administrator",
+    "role": "Administrator",
+    "organization": "SatQuery AI Core Lab",
+    "is_active": true,
+    "created_at": 1789150406.894279,
+    "password_hash": "199477100859d92405b92eb0a1c969db31be009d43ab0b2f7a12275fd3fb1281",
+    "salt": "254a97974b7af41a4316ae2a0757e515"
+  },
+  "analyst@satquery.ai": {
+    "id": "usr_analyst_002",
+    "email": "analyst@satquery.ai",
+    "full_name": "Dr. Elena Rostova",
+    "role": "Geospatial Analyst",
+    "organization": "Earth Observation Research",
+    "is_active": true,
+    "created_at": 1789150406.9495952,
+    "password_hash": "790724942adbb4c0672e3182d3ab29dc77da9f394330b4ffb7ad0f9adf23cca8",
+    "salt": "266f18c9ddcd1c9d20714e17b2b6d584"
+  },
+  "researcher.new@satquery.ai": {
+    "id": "usr_a927a3625e57",
+    "email": "researcher.new@satquery.ai",
+    "full_name": "Dr. Sarah Connor",
+    "role": "Researcher",
+    "organization": "Satellite Dynamics Lab",
+    "is_active": true,
+    "created_at": 1789150410.159724,
+    "password_hash": "d19c53f3f94982ec03af8993e4cd021f1b9de6a33d2856b34087e8fa3f300115",
+    "salt": "b2dccfdf027196ee9567dc73ab7f5bbb"
+  }
+}

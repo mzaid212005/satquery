@@ -1,0 +1,161 @@
+version: "1.0.0"
+registry_name: "SatQuery Specialist Model Registry"
+description: "Declarative configuration mapping remote-sensing task types to specialist models, input schemas, parameter whitelists, and output contracts."
+
+models:
+  rs_vqa_captioning:
+    task_types:
+      - "rs_vqa"
+      - "captioning"
+      - "scene_description"
+    name: "Remote Sensing VQA & Captioning Specialist"
+    module: "backend.models.vqa_caption.vqa_model"
+    class_name: "RSVQACaptioningModel"
+    description: "Domain-adapted visual-question answering and scene description model for single remote sensing scenes."
+    expected_inputs:
+      min_images: 1
+      max_images: 1
+      modalities:
+        - "optical"
+        - "multispectral"
+        - "sar"
+      requires_query: true
+      supported_formats: ["tiff", "geotiff", "png", "jpeg"]
+    permitted_parameters:
+      max_tokens:
+        type: "integer"
+        default: 128
+        min: 16
+        max: 512
+      temperature:
+        type: "float"
+        default: 0.2
+        min: 0.0
+        max: 1.0
+      mode:
+        type: "string"
+        default: "vqa"
+        allowed_values: ["vqa", "caption", "detailed_analysis"]
+    output_schema:
+      answer: "string"
+      caption: "string"
+      confidence: "float"
+      land_cover_classes: "list[string]"
+      spectral_summary: "dict"
+
+  region_grounding:
+    task_types:
+      - "grounding"
+      - "region_grounding"
+      - "object_localization"
+    name: "Text-Guided Region Grounding Specialist"
+    module: "backend.models.grounding.grounding_model"
+    class_name: "RegionGroundingModel"
+    description: "Localizes target remote sensing entities (water bodies, built-up, runways, ports, vegetation) specified by natural language queries."
+    expected_inputs:
+      min_images: 1
+      max_images: 1
+      modalities:
+        - "optical"
+        - "multispectral"
+        - "sar"
+      requires_query: true
+      supported_formats: ["tiff", "geotiff", "png", "jpeg"]
+    permitted_parameters:
+      confidence_threshold:
+        type: "float"
+        default: 0.35
+        min: 0.05
+        max: 0.95
+      max_regions:
+        type: "integer"
+        default: 5
+        min: 1
+        max: 20
+      generate_heatmap:
+        type: "boolean"
+        default: true
+    output_schema:
+      boxes: "list[dict]" # [ymin, xmin, ymax, xmax, label, score]
+      heatmap_mask: "list[list[float]]" # 2D normalized activation map
+      matched_entity: "string"
+      confidence: "float"
+      narrative: "string"
+
+  change_analysis:
+    task_types:
+      - "change_description"
+      - "change_vqa"
+      - "damage_assessment"
+      - "temporal_change"
+    name: "Bi-Temporal Remote Sensing Change Analysis Specialist"
+    module: "backend.models.change.change_model"
+    class_name: "BiTemporalChangeModel"
+    description: "Performs bi-temporal change captioning, change-based VQA, and generates spatial change difference heatmaps/masks between co-registered T1 and T2 images."
+    expected_inputs:
+      min_images: 2
+      max_images: 2
+      input_relationship: "bi_temporal" # Must be same area at different times
+      modalities:
+        - "optical"
+        - "multispectral"
+        - "sar"
+      requires_co_registration: true
+      requires_query: false
+      supported_formats: ["tiff", "geotiff", "png", "jpeg"]
+    permitted_parameters:
+      change_threshold:
+        type: "float"
+        default: 0.40
+        min: 0.1
+        max: 0.9
+      return_difference_mask:
+        type: "boolean"
+        default: true
+      granularity:
+        type: "string"
+        default: "macro"
+        allowed_values: ["macro", "detailed"]
+    output_schema:
+      change_narrative: "string"
+      change_class: "string"
+      change_direction: "string" # increased, decreased, unchanged, modified
+      change_ratio_pct: "float"
+      change_mask: "list[list[float]]" # 2D normalized change probability map
+      confidence: "float"
+
+  optical_sar_fusion:
+    task_types:
+      - "optical_sar_fusion"
+      - "cross_modal_extraction"
+      - "multisensor_joint_analysis"
+    name: "Optical-SAR Cross-Modal Fusion Specialist"
+    module: "backend.models.optical_sar_fusion.fusion_model"
+    class_name: "OpticalSARFusionModel"
+    description: "Fuses co-registered optical/multispectral reflectance with SAR radar backscatter for all-weather joint land-cover and surface feature extraction."
+    expected_inputs:
+      min_images: 2
+      max_images: 2
+      input_relationship: "cross_modal" # Must be optical + SAR pair
+      required_modalities:
+        - "optical"
+        - "sar"
+      requires_co_registration: true
+      requires_query: false
+      supported_formats: ["tiff", "geotiff", "png", "jpeg"]
+    permitted_parameters:
+      target_features:
+        type: "list[string]"
+        default: ["water", "built-up", "vegetation"]
+      fusion_weights:
+        type: "list[float]"
+        default: [0.5, 0.5] # [optical_weight, sar_weight]
+      generate_overlay:
+        type: "boolean"
+        default: true
+    output_schema:
+      fused_narrative: "string"
+      optical_contributions: "dict"
+      sar_contributions: "dict"
+      feature_masks: "dict[string, list[list[float]]]"
+      confidence: "float"
