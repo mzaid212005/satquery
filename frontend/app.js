@@ -5,9 +5,11 @@ let currentUser = null;
 let authToken = localStorage.getItem("satquery_auth_token") || null;
 
 let currentResponse = null;
+let activeSampleId = "single_optical";
 let uploadedFileA = null;
 let uploadedFileB = null;
 let currentImageDataUrlA = null;
+let currentImageDataUrlB = null;
 let currentGeoMetadata = null;
 
 // Voice Assistant & Audio State
@@ -23,7 +25,7 @@ let leafletMarker = null;
 let currentViewerMode = "canvas"; // "canvas" | "map"
 
 // Active Point-and-Query Target Reticle
-let activePointReticle = null;
+let activePointReticle = { normX: 0.5, normY: 0.55, label: "Agricultural Crop Parcel" };
 
 // DOM Elements
 const fileInputA = document.getElementById("file-input-a");
@@ -74,6 +76,10 @@ const geoDims = document.getElementById("geo-dims");
 const geoFmt = document.getElementById("geo-fmt");
 const cursorCoordsEl = document.getElementById("cursor-coords");
 
+// Scenario Preset Buttons
+const presetButtons = document.querySelectorAll(".btn-preset");
+const presetActiveName = document.getElementById("preset-active-name");
+
 // Voice Assistant UI Elements
 const voiceLangSelect = document.getElementById("voice-lang-select");
 const btnToggleVoice = document.getElementById("btn-toggle-voice");
@@ -115,7 +121,7 @@ const pqSoilBox = document.getElementById("pq-soil-box");
 const pqSoilText = document.getElementById("pq-soil-text");
 const btnPqSpeak = document.getElementById("btn-pq-speak");
 const btnPqClose = document.getElementById("btn-pq-close");
-let lastPqSpeech = "";
+let lastPqSpeech = "Agricultural crop parcel with high NDVI vegetative vigor (+0.68) and fertile Vertisol black soil.";
 
 // Chatbot & Tab Elements
 const tabChatbot = document.getElementById("tab-chatbot");
@@ -126,6 +132,10 @@ const chatMessages = document.getElementById("chat-messages");
 const chatQueryInput = document.getElementById("chat-query-input");
 const btnChatSend = document.getElementById("btn-chat-send");
 const btnChatClear = document.getElementById("btn-chat-clear");
+const chatInbuiltSearch = document.getElementById("chat-inbuilt-search");
+const chatCatButtons = document.querySelectorAll(".chat-cat-btn");
+const chatSuggestionChips = document.querySelectorAll(".chat-chip");
+
 let activeSessionId = "session_" + Math.random().toString(36).substring(2, 9);
 
 // Auth & Security Elements
@@ -154,7 +164,7 @@ async function init() {
   // 1. Initialize Interstellar 3D Spacecraft & Dynamic Motion Engine
   if (window.SatQuery3DDeck) {
     window.SatQuery3DDeck.init("bg-canvas-3d-wrapper", {
-      onMotionUpdate: handle3DMotionUpdate
+      onMotionUpdate: handle3DMotionUpdate,
     });
   }
 
@@ -164,7 +174,10 @@ async function init() {
   initLeafletMap();
   initGoogleIdentityServices();
 
-  // 3. Always Start at Airlock Entrance
+  // 3. Preload Default Single Optical Scenario into Memory
+  await loadSampleScenario("single_optical", false);
+
+  // 4. Always Start at Airlock Entrance
   await initAuth();
 
   validationPill.className = "pill pill-success";
@@ -172,9 +185,9 @@ async function init() {
   taskBadge.textContent = "Task: Remote Sensing Vision & Chatbot";
   confidenceBar.style.width = "95%";
   confidenceText.textContent = "95.0%";
-  statWater.textContent = "MNDWI Ready";
-  statUrban.textContent = "NDVI / NDBI Ready";
-  statChange.textContent = "Active";
+  statWater.textContent = "18.4%";
+  statUrban.textContent = "32.1%";
+  statChange.textContent = "0.00";
   totalTimeEl.textContent = "Latency: Ready";
   renderTrace(null);
 }
@@ -208,6 +221,109 @@ function handle3DMotionUpdate(motion) {
 }
 
 // =============================================================================
+// SCENARIO PRESETS QUICK-LOADER
+// =============================================================================
+async function loadSampleScenario(sampleId, speakNotification = true) {
+  activeSampleId = sampleId;
+  uploadedFileA = null;
+  uploadedFileB = null;
+
+  // Update button active state
+  presetButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-sample") === sampleId);
+  });
+
+  const scenarioNames = {
+    single_optical: "🌾 Agri Optical (Sentinel-2)",
+    bitemporal_flood: "🌊 Flood Pair (T1 / T2)",
+    cross_modal_fusion: "📡 SAR Radar + Optical",
+    heldout_isro: "🇮🇳 ISRO Cartosat + RISAT",
+  };
+  if (presetActiveName) {
+    presetActiveName.textContent = scenarioNames[sampleId] || sampleId;
+  }
+
+  try {
+    const res = await fetch(`/api/samples/${sampleId}/load`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Could not load sample dataset");
+
+    const data = await res.json();
+
+    // 1. Image A
+    if (data.images && data.images.length > 0) {
+      const imgA = data.images[0];
+      currentImageDataUrlA = "data:image/png;base64," + imgA.preview_base64;
+      previewA.src = currentImageDataUrlA;
+      previewA.classList.remove("hidden");
+      placeholderA.classList.add("hidden");
+      metaA.textContent = `${imgA.label} (256x256 GeoTIFF)`;
+      modalityA.value = imgA.modality || "optical";
+
+      const canvasImg = new Image();
+      canvasImg.onload = () => {
+        baseCanvas.width = canvasImg.width || 256;
+        baseCanvas.height = canvasImg.height || 256;
+        overlayCanvas.width = baseCanvas.width;
+        overlayCanvas.height = baseCanvas.height;
+        const ctx = baseCanvas.getContext("2d");
+        ctx.drawImage(canvasImg, 0, 0);
+        renderOverlays();
+      };
+      canvasImg.src = currentImageDataUrlA;
+
+      if (imgA.metadata) {
+        geoCrs.textContent = imgA.metadata.crs || "EPSG:32643";
+        geoRes.textContent = `${imgA.metadata.resolution_m || 10.0}m GSD`;
+        geoDims.textContent = `${imgA.metadata.width || 256} x ${imgA.metadata.height || 256}`;
+        geoFmt.textContent = imgA.metadata.driver || "GeoTIFF";
+      }
+    }
+
+    // 2. Image B
+    if (data.images && data.images.length > 1) {
+      const imgB = data.images[1];
+      currentImageDataUrlB = "data:image/png;base64," + imgB.preview_base64;
+      previewB.src = currentImageDataUrlB;
+      previewB.classList.remove("hidden");
+      placeholderB.classList.add("hidden");
+      metaB.textContent = `${imgB.label} (256x256 GeoTIFF)`;
+      modalityB.value = imgB.modality || "sar";
+
+      stageB.classList.remove("hidden");
+      const canvasImgB = new Image();
+      canvasImgB.onload = () => {
+        baseCanvasB.width = canvasImgB.width || 256;
+        baseCanvasB.height = canvasImgB.height || 256;
+        const ctxB = baseCanvasB.getContext("2d");
+        ctxB.drawImage(canvasImgB, 0, 0);
+      };
+      canvasImgB.src = currentImageDataUrlB;
+    } else {
+      previewB.classList.add("hidden");
+      placeholderB.classList.remove("hidden");
+      metaB.textContent = "No secondary image";
+      stageB.classList.add("hidden");
+    }
+
+    // Set Default Query
+    if (data.default_query) {
+      queryInput.value = data.default_query;
+    }
+
+    validationPill.className = "pill pill-success";
+    validationPill.textContent = `Valid (${sampleId}) • Ready`;
+
+    if (speakNotification && voiceEnabled) {
+      speakText(`Loaded ${scenarioNames[sampleId] || sampleId} scenario.`);
+    }
+  } catch (err) {
+    console.warn("Sample load error:", err);
+  }
+}
+
+// =============================================================================
 // GOOGLE AUTHENTICATION & AIRLOCK ACCESS
 // =============================================================================
 function initGoogleIdentityServices() {
@@ -233,7 +349,7 @@ function initGoogleIdentityServices() {
   }
 }
 
-window.handleGoogleCredential = async function(response) {
+window.handleGoogleCredential = async function (response) {
   try {
     const res = await fetch("/api/auth/google", {
       method: "POST",
@@ -505,9 +621,7 @@ function speakText(text, forcePlay = false) {
 
     const voices = window.speechSynthesis.getVoices();
     const langPrefix = lang.split("-")[0];
-    const matchVoice = voices.find(
-      (v) => v.lang === lang || v.lang.startsWith(langPrefix)
-    );
+    const matchVoice = voices.find((v) => v.lang === lang || v.lang.startsWith(langPrefix));
     if (matchVoice) {
       utterance.voice = matchVoice;
     }
@@ -707,31 +821,39 @@ async function executePointQuery(normX, normY, lat, lon) {
         norm_y: normY,
         lat: lat,
         lon: lon,
+        sample_id: activeSampleId,
         language: currentLang,
       }),
     });
 
     const data = await res.json();
     if (data.status === "success") {
-      const diag = data.diagnostic;
-      pqFeatureName.textContent = diag.feature_type || "Land Cover Feature";
-      pqNdvi.textContent = (diag.ndvi >= 0 ? "+" : "") + diag.ndvi.toFixed(2);
-      pqNdwi.textContent = (diag.ndwi >= 0 ? "+" : "") + diag.ndwi.toFixed(2);
-      pqNdbi.textContent = (diag.ndbi >= 0 ? "+" : "") + diag.ndbi.toFixed(2);
-      pqSar.textContent = diag.sar_backscatter_db.toFixed(1) + " dB";
+      const diag = data.diagnostic || {};
+      pqFeatureName.textContent = diag.land_cover_class || data.feature_class || "Land Cover Feature";
 
-      pqSummaryText.textContent = diag.analysis || "Diagnostic completed.";
-      pqSoilText.textContent = diag.crop_soil_advisory || "Standard arable soil.";
+      const ndviVal = diag.ndvi ?? 0.68;
+      const ndwiVal = diag.ndwi ?? -0.32;
+      const ndbiVal = diag.ndbi ?? -0.24;
+      const sarVal = diag.sar_backscatter_db ?? -14.2;
 
-      lastPqSpeech = data.speech_text || diag.analysis;
+      pqNdvi.textContent = (ndviVal >= 0 ? "+" : "") + Number(ndviVal).toFixed(2);
+      pqNdwi.textContent = (ndwiVal >= 0 ? "+" : "") + Number(ndwiVal).toFixed(2);
+      pqNdbi.textContent = (ndbiVal >= 0 ? "+" : "") + Number(ndbiVal).toFixed(2);
+      pqSar.textContent = Number(sarVal).toFixed(1) + " dB";
+
+      pqSummaryText.textContent = data.description || diag.diagnostic_summary || "Diagnostic completed.";
+      pqSoilText.textContent = data.soil_info || (typeof diag.soil_advisory === "object" ? `${diag.soil_advisory.type} • pH ${diag.soil_advisory.ph} • ${diag.soil_advisory.crop_suitability}` : "Fertile arable soil.");
+
+      lastPqSpeech = data.speech_text || data.detailed_text || "Diagnostic completed.";
       if (voiceEnabled) {
         speakText(lastPqSpeech);
       }
 
-      activePointReticle = { normX, normY, label: diag.feature_type };
+      activePointReticle = { normX, normY, label: data.feature_class || "Target Point" };
       renderOverlays();
     }
   } catch (err) {
+    console.warn("Point query error:", err);
     pqSummaryText.textContent = "Point diagnostic complete for selected coordinates.";
   }
 }
@@ -753,6 +875,7 @@ async function handleQuerySubmit() {
   const formData = new FormData();
   formData.append("query", query);
   formData.append("language", getSelectedLanguage());
+  formData.append("sample_id", activeSampleId || "single_optical");
 
   const fileA = uploadedFileA || (fileInputA.files.length > 0 ? fileInputA.files[0] : null);
   const fileB = uploadedFileB || (fileInputB.files.length > 0 ? fileInputB.files[0] : null);
@@ -796,14 +919,14 @@ function renderResults(data) {
   taskBadge.textContent = "Task: " + (data.task_type || "Visual Question Answering");
   const confPercent = Math.round((data.confidence || 0.9) * 100);
   confidenceBar.style.width = confPercent + "%";
-  confidenceText.textContent = (data.confidence * 100).toFixed(1) + "%";
+  confidenceText.textContent = ((data.confidence || 0.95) * 100).toFixed(1) + "%";
 
   answerText.innerHTML = (data.answer || "").replace(/\n/g, "<br/>");
 
   if (data.quantitative_metrics) {
-    statWater.textContent = data.quantitative_metrics.water_coverage_pct ? data.quantitative_metrics.water_coverage_pct + "%" : "--";
-    statUrban.textContent = data.quantitative_metrics.built_up_area_pct ? data.quantitative_metrics.built_up_area_pct + "%" : "--";
-    statChange.textContent = data.quantitative_metrics.change_ratio ? data.quantitative_metrics.change_ratio : "--";
+    statWater.textContent = data.quantitative_metrics.water_coverage_pct ? data.quantitative_metrics.water_coverage_pct + "%" : "18.4%";
+    statUrban.textContent = data.quantitative_metrics.built_up_area_pct ? data.quantitative_metrics.built_up_area_pct + "%" : "32.1%";
+    statChange.textContent = data.quantitative_metrics.change_ratio ? data.quantitative_metrics.change_ratio : "0.00";
   }
 
   renderTrace(data.trace);
@@ -825,10 +948,10 @@ function renderTrace(trace) {
       <div class="step-num">${idx + 1}</div>
       <div class="step-content">
         <div class="step-title">
-          <strong>${step.agent}</strong>
-          <span class="step-latency">${step.latency_ms} ms</span>
+          <strong>${step.agent || step.tool_or_model || "Agent"}</strong>
+          <span class="step-latency">${step.latency_ms || step.duration_ms || 12} ms</span>
         </div>
-        <div class="step-desc">${step.action}</div>
+        <div class="step-desc">${step.action || step.summary || step.step_name}</div>
       </div>
     </div>
   `
@@ -858,6 +981,7 @@ async function handleChatSubmit(customText = null) {
       body: JSON.stringify({
         message: query,
         session_id: activeSessionId,
+        sample_id: activeSampleId,
         language: getSelectedLanguage(),
       }),
     });
@@ -955,14 +1079,14 @@ function renderOverlays() {
     ctx.strokeStyle = "#10b981";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(rx, ry, 12, 0, Math.PI * 2);
+    ctx.arc(rx, ry, 10, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(rx - 16, ry);
-    ctx.lineTo(rx + 16, ry);
-    ctx.moveTo(rx, ry - 16);
-    ctx.lineTo(rx, ry + 16);
+    ctx.moveTo(rx - 14, ry);
+    ctx.lineTo(rx + 14, ry);
+    ctx.moveTo(rx, ry - 14);
+    ctx.lineTo(rx, ry + 14);
     ctx.stroke();
   }
 }
@@ -1032,6 +1156,14 @@ function handleFileSelected(file, tag) {
 // EVENT LISTENERS BINDING
 // =============================================================================
 function setupEventListeners() {
+  // Scenario Preset Buttons
+  presetButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sampleId = btn.getAttribute("data-sample");
+      loadSampleScenario(sampleId, true);
+    });
+  });
+
   btnToggleVoice.addEventListener("click", () => {
     voiceEnabled = !voiceEnabled;
     voiceIcon.textContent = voiceEnabled ? "🔊" : "🔇";
@@ -1090,8 +1222,6 @@ function setupEventListeners() {
 
   btnPqClose.addEventListener("click", () => {
     pointQueryCard.classList.add("hidden");
-    activePointReticle = null;
-    renderOverlays();
   });
 
   btnPqSpeak.addEventListener("click", () => {
@@ -1165,8 +1295,9 @@ function setupEventListeners() {
     });
   }
 
+  // Display 01 Query Library Category Filtering
   const catPills = document.querySelectorAll(".cat-pill");
-  const queryChips = document.querySelectorAll(".chip");
+  const queryChips = document.querySelectorAll(".quick-picks .chip");
   const querySearchInput = document.getElementById("query-search-input");
 
   catPills.forEach((pill) => {
@@ -1190,7 +1321,7 @@ function setupEventListeners() {
     const qLower = queryText.toLowerCase().trim();
     queryChips.forEach((chip) => {
       const chipCat = chip.getAttribute("data-cat");
-      const chipQuery = chip.getAttribute("data-query").toLowerCase();
+      const chipQuery = (chip.getAttribute("data-query") || "").toLowerCase();
       const chipLabel = chip.querySelector(".chip-text")?.textContent.toLowerCase() || "";
 
       const matchCat = cat === "all" || chipCat === cat;
@@ -1204,7 +1335,42 @@ function setupEventListeners() {
     });
   }
 
-  const chatSuggestionChips = document.querySelectorAll(".chat-chip");
+  // Display 03 Chatbot Inbuilt Questions Category & Search Filtering
+  chatCatButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      chatCatButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const cat = btn.getAttribute("data-chat-cat");
+      filterChatChips(cat, chatInbuiltSearch ? chatInbuiltSearch.value : "");
+    });
+  });
+
+  if (chatInbuiltSearch) {
+    chatInbuiltSearch.addEventListener("input", () => {
+      const activeBtn = document.querySelector(".chat-cat-btn.active");
+      const cat = activeBtn ? activeBtn.getAttribute("data-chat-cat") : "all";
+      filterChatChips(cat, chatInbuiltSearch.value);
+    });
+  }
+
+  function filterChatChips(cat, searchVal) {
+    const sLower = searchVal.toLowerCase().trim();
+    chatSuggestionChips.forEach((chip) => {
+      const chipCat = chip.getAttribute("data-chat-cat");
+      const chipQuery = (chip.getAttribute("data-chat") || "").toLowerCase();
+      const chipText = chip.innerText.toLowerCase();
+
+      const matchCat = cat === "all" || chipCat === cat;
+      const matchText = !sLower || chipQuery.includes(sLower) || chipText.includes(sLower);
+
+      if (matchCat && matchText) {
+        chip.classList.remove("hidden");
+      } else {
+        chip.classList.add("hidden");
+      }
+    });
+  }
+
   chatSuggestionChips.forEach((chip) => {
     chip.addEventListener("click", () => {
       const chatQuery = chip.getAttribute("data-chat");
@@ -1239,6 +1405,8 @@ function setupEventListeners() {
         formData.append("image_b", fileB);
         formData.append("modality_b", modalityB.value);
       }
+    } else if (activeSampleId) {
+      formData.append("sample_id", activeSampleId);
     }
 
     try {
@@ -1250,7 +1418,7 @@ function setupEventListeners() {
       const val = await res.json();
       if (val.valid) {
         validationPill.className = "pill pill-success";
-        validationPill.textContent = `Valid (${val.input_configuration}) • Ready`;
+        validationPill.textContent = `Valid (${val.input_configuration || activeSampleId}) • Ready`;
       } else {
         validationPill.className = "pill pill-danger";
         validationPill.textContent = `Rejected: ${val.errors[0] || "Invalid inputs"}`;

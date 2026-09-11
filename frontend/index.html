@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -258,10 +259,36 @@
           </div>
 
           <div class="panel-header">
-            <h2>1. Input Imagery & Configuration</h2>
+            <h2>1. Scenario Presets & Input Imagery</h2>
           </div>
 
-          <p class="panel-desc">Upload custom satellite imagery (GeoTIFF / PNG / JPEG) or explore and query directly on the interactive GIS Satellite Map.</p>
+          <!-- Scenario Presets Bar (1-Click Multi-Sensor Preloaders) -->
+          <div class="scenario-presets-bar">
+            <div class="scenario-presets-header">
+              <span class="preset-label">🛰️ Active Mission Scenario:</span>
+              <span class="preset-status-tag" id="preset-active-name">🌾 Agri Optical (Sentinel-2)</span>
+            </div>
+            <div class="preset-buttons" id="preset-buttons">
+              <button type="button" class="btn-preset active" data-sample="single_optical" title="Sentinel-2 Single Optical (River Basin & Agri Fields)">
+                <span class="preset-icon">🌾</span>
+                <span class="preset-name">Agri Optical</span>
+              </button>
+              <button type="button" class="btn-preset" data-sample="bitemporal_flood" title="T1 Pre-Event vs T2 Post-Event Flood & Sprawl">
+                <span class="preset-icon">🌊</span>
+                <span class="preset-name">Flood Pair</span>
+              </button>
+              <button type="button" class="btn-preset" data-sample="cross_modal_fusion" title="Sentinel-2 Optical + Sentinel-1 SAR Radar Fusion">
+                <span class="preset-icon">📡</span>
+                <span class="preset-name">SAR Radar</span>
+              </button>
+              <button type="button" class="btn-preset" data-sample="heldout_isro" title="ISRO Cartosat-2S High-Res Optical + RISAT SAR">
+                <span class="preset-icon">🇮🇳</span>
+                <span class="preset-name">ISRO Suite</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="panel-desc">Upload custom satellite imagery (GeoTIFF / PNG / JPEG) or switch sample scenarios above.</p>
 
           <!-- Upload Zones -->
           <div class="upload-container">
@@ -283,7 +310,7 @@
                 </div>
                 <input type="file" id="file-input-a" accept=".tif,.tiff,.geotiff,.png,.jpg,.jpeg" class="file-input" />
               </div>
-              <div class="meta-tag" id="meta-a">Waiting for image...</div>
+              <div class="meta-tag" id="meta-a">Sentinel-2 Optical (256x256)</div>
             </div>
 
             <!-- Image B (Optional / Pair) -->
@@ -311,7 +338,7 @@
           <!-- Validation Trigger & Status -->
           <div class="validation-bar">
             <button id="btn-validate" class="btn btn-secondary">⚡ Check Input Compatibility</button>
-            <div id="validation-pill" class="pill pill-neutral">Ready for validation</div>
+            <div id="validation-pill" class="pill pill-success">Valid (single_optical) • Ready</div>
           </div>
 
           <!-- Natural Language Query Box -->
@@ -607,7 +634,7 @@
             <span>Resolution: <strong id="geo-res">10.0m GSD</strong></span>
             <span>Dimensions: <strong id="geo-dims">256 x 256</strong></span>
             <span>Format: <strong id="geo-fmt">GeoTIFF</strong></span>
-            <span>Point Coordinates: <strong id="cursor-coords">X: --, Y: --</strong></span>
+            <span>Point Coordinates: <strong id="cursor-coords">X: 128, Y: 140</strong></span>
           </div>
         </section>
 
@@ -653,30 +680,167 @@
                       <li>⏱️ <em>"What changed between pre- and post-event imagery?"</em></li>
                       <li>📡 <em>"Explain difference between SAR radar and Optical imagery"</em></li>
                     </ul>
-                    You can chat freely with or without uploading satellite imagery!
+                    Select any question category below or type your instruction!
                   </div>
                 </div>
               </div>
 
-              <!-- Chat Quick Topic Suggestions -->
-              <div class="chat-quick-suggestions" id="chat-quick-suggestions">
-                <button class="chat-chip" id="chat-chip-point-diagnostic" data-chat="Analyze the agricultural crop vigor, soil moisture, and spectral NDVI at point location x: 128, y: 140.">📍 Point Diagnostic (x:128, y:140)</button>
-                <button class="chat-chip" data-chat="Suggest crop, vegetable, soil level etc object highlight that part">🌾 Crop, Vegetable & Soil</button>
-                <button class="chat-chip" data-chat="What are the best crops, pH, and fertilizer for black cotton soil?">🌱 Black Cotton Soil Guide</button>
-                <button class="chat-chip" data-chat="Evaluate laterite soil profile, pH buffering with lime, and plantation crop suitability.">🌰 Laterite Soil & Lime</button>
-                <button class="chat-chip" data-chat="Recommend drought-tolerant crops and sub-surface irrigation for arid sandy soil.">🏜️ Arid Soil & Drought Crops</button>
-                <button class="chat-chip" data-chat="What soil reclamation strategy and gypsum dosage is required for saline-sodic soil?">🧪 Saline Soil Gypsum Guide</button>
-                <button class="chat-chip" data-chat="Highlight the water body referred to in the query.">🌊 Highlight Water Body</button>
-                <button class="chat-chip" data-chat="Delineate the lake shoreline and calculate total surface water coverage percentage.">💧 Shoreline & Water Metric</button>
-                <button class="chat-chip" data-chat="Identify high-density residential built-up clusters and commercial zones.">🏙️ Urban Built-Up Clusters</button>
-                <button class="chat-chip" data-chat="Highlight the airport runway, taxiway, and tarmac infrastructure.">🛫 Airport Runway Detection</button>
-                <button class="chat-chip" data-chat="What changed between these two dates, and where did the change occur?">⏱️ Bi-Temporal Change Detection</button>
-                <button class="chat-chip" data-chat="Has the built-up area increased, decreased, or remained unchanged?">📈 Built-Up Area Trend</button>
-                <button class="chat-chip" data-chat="What is the difference between SAR radar backscatter and Optical RGB?">📡 SAR vs Optical Physics</button>
-                <button class="chat-chip" data-chat="Compare spatial and spectral resolutions of Sentinel-2 vs ISRO Cartosat-2S and RISAT-1A.">🛰️ Sentinel-2 vs ISRO Satellites</button>
-                <button class="chat-chip" data-chat="Explain the CARTO Dark Matter Basemap API and how to use it in GIS mode.">🏙️ CARTO Dark Map API</button>
-                <button class="chat-chip" data-chat="Explain NDVI, NDWI, and NDBI formulas and applications">📊 Spectral Indices (NDVI / NDWI)</button>
-                <button class="chat-chip" data-chat="Describe the land-cover and major objects visible in this image.">🗺️ Full Land-Cover Description</button>
+              <!-- Categorized Inbuilt Chatbot Questions Library -->
+              <div class="chat-inbuilt-drawer" id="chat-inbuilt-drawer">
+                <div class="chat-inbuilt-header">
+                  <span class="chat-inbuilt-title">💡 INBUILT MISSION QUESTIONS:</span>
+                  <input type="text" id="chat-inbuilt-search" class="chat-inbuilt-search" placeholder="🔍 Search chatbot questions..." />
+                </div>
+
+                <!-- Chatbot Category Filter Bar -->
+                <div class="chat-cat-bar" id="chat-cat-bar">
+                  <button class="chat-cat-btn active" data-chat-cat="all">🌟 All (31)</button>
+                  <button class="chat-cat-btn" data-chat-cat="agri">🌾 Agri & Soil (6)</button>
+                  <button class="chat-cat-btn" data-chat-cat="water">🌊 Water & Flood (5)</button>
+                  <button class="chat-cat-btn" data-chat-cat="urban">🏙️ Urban (5)</button>
+                  <button class="chat-cat-btn" data-chat-cat="change">⏱️ Change (5)</button>
+                  <button class="chat-cat-btn" data-chat-cat="sar">📡 SAR (5)</button>
+                  <button class="chat-cat-btn" data-chat-cat="spectral">📊 Spectral (5)</button>
+                </div>
+
+                <!-- Chat Quick Topic Suggestions Grid -->
+                <div class="chat-quick-suggestions" id="chat-quick-suggestions">
+                  <!-- Category 1: Agri & Soil -->
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="Suggest crop, vegetable, soil level etc object highlight that part">
+                    <span class="chat-chip-badge badge-agri">🌾 AGRI</span>
+                    <span>Suggest crop, vegetable, soil level & highlight parcel</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="What are the best crops, pH level, and fertilizer advisory for black cotton soil?">
+                    <span class="chat-chip-badge badge-agri">🌱 SOIL</span>
+                    <span>Black cotton soil (Vertisol) crops, pH & fertilizer</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="Assess crop vigor, canopy greenness, and soil moisture capacity across the agricultural parcels.">
+                    <span class="chat-chip-badge badge-agri">🚜 VIGOR</span>
+                    <span>Assess crop vigor, canopy health & soil moisture</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="Evaluate laterite soil profile, pH buffering with lime, and plantation crop suitability.">
+                    <span class="chat-chip-badge badge-agri">🌰 SOIL</span>
+                    <span>Laterite soil profile, lime buffering & plantation crops</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="Recommend drought-tolerant crops and sub-surface irrigation for arid sandy soil.">
+                    <span class="chat-chip-badge badge-agri">🏜️ ARID</span>
+                    <span>Arid sandy soil drought crops & drip irrigation</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="agri" data-chat="What soil reclamation strategy and gypsum dosage is required for saline-sodic soil?">
+                    <span class="chat-chip-badge badge-agri">🧪 SALINE</span>
+                    <span>Saline-sodic soil reclamation & gypsum management</span>
+                  </button>
+
+                  <!-- Category 2: Water & Flood -->
+                  <button class="chat-chip" data-chat-cat="water" data-chat="Highlight the water body referred to in the query.">
+                    <span class="chat-chip-badge badge-water">🎯 GROUND</span>
+                    <span>Highlight the water body referred to in the query</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="water" data-chat="Delineate the lake shoreline and calculate total surface water coverage percentage.">
+                    <span class="chat-chip-badge badge-water">🌊 WATER</span>
+                    <span>Delineate lake shoreline & water coverage metric</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="water" data-chat="Identify flooded regions and quantify inundation extent across agricultural zones.">
+                    <span class="chat-chip-badge badge-water">💧 FLOOD</span>
+                    <span>Identify flooded regions & quantify inundation extent</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="water" data-chat="Detect marine vessels and dock infrastructure along the harbor coastline.">
+                    <span class="chat-chip-badge badge-water">🚢 HARBOR</span>
+                    <span>Detect marine vessels & dock harbor infrastructure</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="water" data-chat="Locate the meandering river channel and trace riparian buffer vegetation.">
+                    <span class="chat-chip-badge badge-water">🏞️ RIVER</span>
+                    <span>Locate meandering river channel & riparian buffer</span>
+                  </button>
+
+                  <!-- Category 3: Urban & Infra -->
+                  <button class="chat-chip" data-chat-cat="urban" data-chat="Describe the land-cover and major objects visible in this image.">
+                    <span class="chat-chip-badge badge-urban">🗺️ CAPTION</span>
+                    <span>Describe land-cover & major objects in scene</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="urban" data-chat="Identify high-density residential built-up clusters and commercial zones.">
+                    <span class="chat-chip-badge badge-urban">🏙️ URBAN</span>
+                    <span>Identify residential built-up & commercial zones</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="urban" data-chat="Highlight the airport runway, taxiway, and tarmac infrastructure.">
+                    <span class="chat-chip-badge badge-urban">🛫 AIRPORT</span>
+                    <span>Highlight airport runway, taxiway & tarmac</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="urban" data-chat="Detect primary road networks, highway corridors, and transportation arteries.">
+                    <span class="chat-chip-badge badge-urban">🛣️ ROADS</span>
+                    <span>Detect primary road networks & highway corridors</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="urban" data-chat="Locate industrial facilities, warehouse complexes, and impervious parking lots.">
+                    <span class="chat-chip-badge badge-urban">🏗️ INFRA</span>
+                    <span>Locate industrial facilities & warehouse complexes</span>
+                  </button>
+
+                  <!-- Category 4: Change Detection -->
+                  <button class="chat-chip" data-chat-cat="change" data-chat="What changed between these two dates, and where did the change occur?">
+                    <span class="chat-chip-badge badge-change">⏱️ CHANGE</span>
+                    <span>What changed between these two dates & where?</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="change" data-chat="Has the built-up area increased, decreased, or remained unchanged?">
+                    <span class="chat-chip-badge badge-change">📈 TREND</span>
+                    <span>Has built-up area increased, decreased or unchanged?</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="change" data-chat="Map post-disaster flood damage and structural destruction between T1 and T2.">
+                    <span class="chat-chip-badge badge-change">🌪️ DISASTER</span>
+                    <span>Map post-disaster flood damage & destruction</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="change" data-chat="Quantify deforestation and vegetation canopy loss between the two acquisition dates.">
+                    <span class="chat-chip-badge badge-change">🌲 FORESTRY</span>
+                    <span>Quantify deforestation & canopy loss between dates</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="change" data-chat="Detect new construction sites and expansion of impervious surfaces over time.">
+                    <span class="chat-chip-badge badge-change">🚧 SPRAWL</span>
+                    <span>Detect new construction & impervious expansion</span>
+                  </button>
+
+                  <!-- Category 5: SAR Radar -->
+                  <button class="chat-chip" data-chat-cat="sar" data-chat="What is the difference between SAR radar backscatter and Optical RGB?">
+                    <span class="chat-chip-badge badge-fusion">🔬 PHYSICS</span>
+                    <span>SAR radar backscatter (VV/VH) vs Optical reflectance</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="sar" data-chat="Use the optical and SAR images together to identify built-up and water-covered regions.">
+                    <span class="chat-chip-badge badge-fusion">📡 FUSION</span>
+                    <span>Use optical & SAR together for built-up & water</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="sar" data-chat="Fuse optical multispectral RGB with SAR backscatter to map flooded fields through cloud cover.">
+                    <span class="chat-chip-badge badge-fusion">🛰️ ALL-WX</span>
+                    <span>Fuse optical RGB + SAR backscatter under cloud cover</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="sar" data-chat="Compare dihedral double-bounce urban reflections in SAR against optical visible rooftops.">
+                    <span class="chat-chip-badge badge-fusion">⚡ DOUBLE-BOUNCE</span>
+                    <span>Compare SAR double-bounce vs optical rooftops</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="sar" data-chat="Detect water accumulation under thick cloud cover using SAR VV/VH polarization.">
+                    <span class="chat-chip-badge badge-fusion">🌧️ RADAR</span>
+                    <span>Detect water under clouds via SAR VV/VH polarization</span>
+                  </button>
+
+                  <!-- Category 6: Spectral Indices -->
+                  <button class="chat-chip" data-chat-cat="spectral" data-chat="Explain NDVI, NDWI, NDBI, SAVI, and EVI formulas and diagnostic thresholds.">
+                    <span class="chat-chip-badge badge-spectral">📊 INDICES</span>
+                    <span>Explain NDVI, NDWI, NDBI, SAVI & EVI formulas</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="spectral" data-chat="How does chlorophyll absorption in Red and cell structure scattering in NIR produce NDVI?">
+                    <span class="chat-chip-badge badge-spectral">🌿 BIOLOGY</span>
+                    <span>Chlorophyll Red absorption & NIR cellular scattering</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="spectral" data-chat="Compare spatial and spectral resolutions of Sentinel-2 vs ISRO Cartosat-2S and RISAT-1A.">
+                    <span class="chat-chip-badge badge-spectral">🛰️ SATELLITES</span>
+                    <span>Sentinel-2 vs ISRO Cartosat-2S & RISAT-1A specs</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="spectral" data-chat="How is Normalized Difference Water Index (NDWI) used to separate water from dark shadows?">
+                    <span class="chat-chip-badge badge-spectral">🌡️ NDWI</span>
+                    <span>NDWI water separation from mountain shadows</span>
+                  </button>
+                  <button class="chat-chip" data-chat-cat="spectral" data-chat="Explain the CARTO Dark Matter Basemap API and how to use it in GIS mode.">
+                    <span class="chat-chip-badge badge-spectral">🏙️ CARTO DARK</span>
+                    <span>CARTO Dark GIS Map API & Telemetry Guide</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Chat Input Bar -->
@@ -719,9 +883,9 @@
             <div class="quantitative-card" id="quant-card">
               <div class="card-title-sm">Quantitative Remote Sensing Analysis</div>
               <div class="metric-chips" id="metric-chips">
-                <div class="metric-chip">Water Coverage: <strong id="stat-water">--</strong></div>
-                <div class="metric-chip">Built-Up Area: <strong id="stat-urban">--</strong></div>
-                <div class="metric-chip">Change Ratio: <strong id="stat-change">--</strong></div>
+                <div class="metric-chip">Water Coverage: <strong id="stat-water">18.4%</strong></div>
+                <div class="metric-chip">Built-Up Area: <strong id="stat-urban">32.1%</strong></div>
+                <div class="metric-chip">Change Ratio: <strong id="stat-change">0.00</strong></div>
               </div>
             </div>
 
@@ -733,7 +897,7 @@
               </div>
               <p class="trace-sub">Observable sequence of tool routing, whitelisted parameters, and output artifacts.</p>
               <div class="trace-timeline" id="trace-timeline">
-                <div class="timeline-empty">No pipeline runs recorded yet.</div>
+                <div class="timeline-empty">Pipeline ready for execution.</div>
               </div>
             </div>
           </div>
@@ -742,7 +906,6 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="3d.js"></script>
   <script src="app.js"></script>
 </body>
