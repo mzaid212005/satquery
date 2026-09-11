@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SatQuery AI — Agentic Remote Sensing Vision-Language Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 2D Interactive Space Constellation & Geospatial Background Canvas -->
+  <canvas id="bg-canvas-2d" class="bg-canvas-2d"></canvas>
+
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">🛰️</div>
+        <div>
+          <h1>SatQuery AI</h1>
+          <p class="tagline">Agentic Remote-Sensing Vision-Language Intelligence</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <!-- Voice Assistant Language Selector -->
+        <div class="lang-select-wrapper" title="Voice Assistant & Chat Language">
+          <span class="lang-globe-icon">🌐</span>
+          <select id="voice-lang-select" class="select-input lang-select">
+            <option value="en-US" selected>🇺🇸 English (US)</option>
+            <option value="en-IN">🇮🇳 English (India)</option>
+            <option value="kn-IN">🇮🇳 ಕನ್ನಡ (Kannada)</option>
+            <option value="hi-IN">🇮🇳 हिन्दी (Hindi)</option>
+            <option value="es-ES">🇪🇸 Español (Spanish)</option>
+            <option value="fr-FR">🇫🇷 Français (French)</option>
+            <option value="de-DE">🇩🇪 Deutsch (German)</option>
+            <option value="ja-JP">🇯🇵 日本語 (Japanese)</option>
+            <option value="ar-SA">🇸🇦 العربية (Arabic)</option>
+            <option value="te-IN">🇮🇳 తెలుగు (Telugu)</option>
+            <option value="ta-IN">🇮🇳 தமிழ் (Tamil)</option>
+          </select>
+        </div>
+
+        <!-- Voice Assistant Status & Global Toggle -->
+        <div class="voice-status-bar" id="voice-status-bar">
+          <button id="btn-toggle-voice" class="btn-voice-toggle" title="Toggle AI Voice Assistant">
+            <span id="voice-icon">🔊</span>
+            <span id="voice-toggle-label">Voice AI: ON</span>
+          </button>
+          <div class="audio-wave-visualizer hidden" id="audio-wave-visualizer">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+        </div>
+
+        <!-- User Profile & Authentication -->
+        <div class="user-auth-badge" id="user-auth-badge">
+          <button class="user-profile-btn" id="btn-user-profile" title="User Account & Security">
+            <span class="user-avatar-icon" id="user-avatar">👤</span>
+            <div class="user-info-text">
+              <strong id="user-display-name">Sign In / Register</strong>
+              <span class="user-role-tag" id="user-role-tag">🔒 Auth Required</span>
+            </div>
+          </button>
+          <button id="btn-header-logout" class="btn-logout hidden" title="Logout Session">🚪</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Input & Controls -->
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <h2>1. Input Imagery & Configuration</h2>
+        </div>
+
+        <p class="panel-desc">Upload custom satellite imagery (GeoTIFF / PNG / JPEG) or explore and query directly on the interactive GIS Satellite Map.</p>
+
+        <!-- Upload Zones -->
+        <div class="upload-container">
+          <!-- Image A -->
+          <div class="image-upload-card" id="card-image-a">
+            <div class="card-top">
+              <span class="card-label">Image A (Primary / T1)</span>
+              <select id="modality-a" class="select-input">
+                <option value="optical" selected>Optical / RGB</option>
+                <option value="multispectral">Multispectral</option>
+                <option value="sar">SAR (Radar)</option>
+              </select>
+            </div>
+            <div class="dropzone" id="dropzone-a">
+              <img id="preview-a" class="preview-img hidden" alt="Preview A" />
+              <div class="drop-placeholder" id="placeholder-a">
+                <span class="upload-icon">📥</span>
+                <span>Click or drag GeoTIFF / TIFF / PNG</span>
+              </div>
+              <input type="file" id="file-input-a" accept=".tif,.tiff,.geotiff,.png,.jpg,.jpeg" class="file-input" />
+            </div>
+            <div class="meta-tag" id="meta-a">Waiting for image...</div>
+          </div>
+
+          <!-- Image B (Optional / Pair) -->
+          <div class="image-upload-card" id="card-image-b">
+            <div class="card-top">
+              <span class="card-label">Image B (T2 / Cross-Modal)</span>
+              <select id="modality-b" class="select-input">
+                <option value="sar">SAR (Radar)</option>
+                <option value="optical">Optical / RGB</option>
+                <option value="multispectral">Multispectral</option>
+              </select>
+            </div>
+            <div class="dropzone" id="dropzone-b">
+              <img id="preview-b" class="preview-img hidden" alt="Preview B" />
+              <div class="drop-placeholder" id="placeholder-b">
+                <span class="upload-icon">📥</span>
+                <span>Optional: 2nd Image for Pair Tasks</span>
+              </div>
+              <input type="file" id="file-input-b" accept=".tif,.tiff,.geotiff,.png,.jpg,.jpeg" class="file-input" />
+            </div>
+            <div class="meta-tag" id="meta-b">No secondary image</div>
+          </div>
+        </div>
+
+        <!-- Validation Trigger & Status -->
+        <div class="validation-bar">
+          <button id="btn-validate" class="btn btn-secondary">⚡ Check Input Compatibility</button>
+          <div id="validation-pill" class="pill pill-neutral">Ready for validation</div>
+        </div>
+
+        <!-- Natural Language Query Box -->
+        <div class="query-section">
+          <div class="panel-header-sm" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>2. Natural Language Query</h2>
+            <span class="voice-hint-badge" title="Speech-to-Text active">🎙️ Voice Input Enabled</span>
+          </div>
+          <div class="query-box-wrapper">
+            <div class="textarea-mic-wrap">
+              <textarea id="query-input" rows="3" placeholder="Enter your remote-sensing question or instruction, or click 🎙️ to speak..."></textarea>
+              <button id="btn-mic-query" class="btn-mic-trigger" title="Speak Query (Speech-to-Text)">
+                <span class="mic-icon">🎙️</span>
+              </button>
+            </div>
+            <button id="btn-submit" class="btn btn-primary">
+              <span id="btn-text">Execute Agentic Pipeline 🚀</span>
+              <span id="btn-spinner" class="spinner hidden"></span>
+            </button>
+          </div>
+
+          <!-- Quick-Picks & Query Hub -->
+          <div class="query-hub-header">
+            <label class="section-label">📚 Remote Sensing Query Library:</label>
+            <div class="query-search-wrap">
+              <input type="text" id="query-search-input" placeholder="🔍 Filter 30+ queries..." />
+            </div>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div class="query-cat-bar" id="query-cat-bar">
+            <button class="cat-pill active" data-cat="all">🌟 All (33)</button>
+            <button class="cat-pill" data-cat="spatial">📍 Spatial & Point (3)</button>
+            <button class="cat-pill" data-cat="agri">🌾 Agri & Soil (6)</button>
+            <button class="cat-pill" data-cat="water">🌊 Water & Flood (5)</button>
+            <button class="cat-pill" data-cat="urban">🏙️ Urban & Infra (5)</button>
+            <button class="cat-pill" data-cat="change">⏱️ Change & Disaster (5)</button>
+            <button class="cat-pill" data-cat="fusion">📡 SAR & Fusion (5)</button>
+            <button class="cat-pill" data-cat="spectral">📊 Indices & Physics (5)</button>
+          </div>
+
+          <div class="quick-picks" id="quick-picks">
+            <!-- 0. Spatial NLP & Point-and-Query -->
+            <button class="chip" id="chip-point-diagnostic" data-cat="spatial" data-query="Analyze the agricultural crop vigor, soil moisture, and spectral NDVI at point location x: 128, y: 140.">
+              <span class="chip-badge badge-agri">📍 POINT</span>
+              <span class="chip-text" id="chip-point-text">Analyze point location x:128, y:140 for NDVI & Soil</span>
+            </button>
+            <button class="chip" data-cat="spatial" data-query="Identify what land-cover feature exists in the north-west quadrant and water body in the southern area.">
+              <span class="chip-badge badge-water">🧭 QUADRANT</span>
+              <span class="chip-text">North-west quadrant & southern water body feature</span>
+            </button>
+            <button class="chip" data-cat="spatial" data-query="Perform point diagnostic at coordinates 18.5204 N, 73.8567 E and provide soil suitability advisory.">
+              <span class="chip-badge badge-urban">🌐 GEO-LOC</span>
+              <span class="chip-text">Point diagnostic at 18.5204 N, 73.8567 E coordinates</span>
+            </button>
+
+            <!-- 1. Precision Agriculture & Soil -->
+            <button class="chip" data-cat="agri" data-query="Suggest crop, vegetable, soil level etc object highlight that part">
+              <span class="chip-badge badge-agri">🌾 AGRI</span>
+              <span class="chip-text">Suggest crop, vegetable, soil level & highlight parcel</span>
+            </button>
+            <button class="chip" data-cat="agri" data-query="What are the best crops, pH level, and fertilizer advisory for black cotton soil?">
+              <span class="chip-badge badge-agri">🌱 SOIL</span>
+              <span class="chip-text">Black cotton soil (Vertisol) crops, pH & fertilizer</span>
+            </button>
+            <button class="chip" data-cat="agri" data-query="Assess crop vigor, canopy greenness, and soil moisture capacity across the agricultural parcels.">
+              <span class="chip-badge badge-agri">🚜 VIGOR</span>
+              <span class="chip-text">Assess crop vigor, canopy health & soil moisture</span>
+            </button>
+            <button class="chip" data-cat="agri" data-query="Evaluate laterite soil profile, pH buffering with lime, and plantation crop suitability.">
+              <span class="chip-badge badge-agri">🌰 SOIL</span>
+              <span class="chip-text">Laterite soil profile, lime buffering & plantation crops</span>
+            </button>
+            <button class="chip" data-cat="agri" data-query="Recommend drought-tolerant crops and sub-surface irrigation for arid sandy soil.">
+              <span class="chip-badge badge-agri">🏜️ ARID</span>
+              <span class="chip-text">Arid sandy soil drought crops & drip irrigation</span>
+            </button>
+            <button class="chip" data-cat="agri" data-query="What soil reclamation strategy and gypsum dosage is required for saline-sodic soil?">
+              <span class="chip-badge badge-agri">🧪 SALINE</span>
+              <span class="chip-text">Saline-sodic soil reclamation & gypsum management</span>
+            </button>
+
+            <!-- 2. Water Bodies & Flood -->
+            <button class="chip" data-cat="water" data-query="Highlight the water body referred to in the query.">
+              <span class="chip-badge badge-water">🎯 GROUND</span>
+              <span class="chip-text">Highlight the water body referred to in the query</span>
+            </button>
+            <button class="chip" data-cat="water" data-query="Delineate the lake shoreline and calculate total surface water coverage percentage.">
+              <span class="chip-badge badge-water">🌊 WATER</span>
+              <span class="chip-text">Delineate lake shoreline & water coverage metric</span>
+            </button>
+            <button class="chip" data-cat="water" data-query="Identify flooded regions and quantify inundation extent across agricultural zones.">
+              <span class="chip-badge badge-water">💧 FLOOD</span>
+              <span class="chip-text">Identify flooded regions & quantify inundation extent</span>
+            </button>
+            <button class="chip" data-cat="water" data-query="Detect marine vessels and dock infrastructure along the harbor coastline.">
+              <span class="chip-badge badge-water">🚢 HARBOR</span>
+              <span class="chip-text">Detect marine vessels & dock harbor infrastructure</span>
+            </button>
+            <button class="chip" data-cat="water" data-query="Locate the meandering river channel and trace riparian buffer vegetation.">
+              <span class="chip-badge badge-water">🏞️ RIVER</span>
+              <span class="chip-text">Locate meandering river channel & riparian buffer</span>
+            </button>
+
+            <!-- 3. Urban & Infrastructure -->
+            <button class="chip" data-cat="urban" data-query="Describe the land-cover and major objects visible in this image.">
+              <span class="chip-badge badge-urban">🗺️ CAPTION</span>
+              <span class="chip-text">Describe land-cover & major objects in scene</span>
+            </button>
+            <button class="chip" data-cat="urban" data-query="Identify high-density residential built-up clusters and commercial zones.">
+              <span class="chip-badge badge-urban">🏙️ URBAN</span>
+              <span class="chip-text">Identify residential built-up & commercial zones</span>
+            </button>
+            <button class="chip" data-cat="urban" data-query="Highlight the airport runway, taxiway, and tarmac infrastructure.">
+              <span class="chip-badge badge-urban">🛫 AIRPORT</span>
+              <span class="chip-text">Highlight airport runway, taxiway & tarmac</span>
+            </button>
+            <button class="chip" data-cat="urban" data-query="Detect primary road networks, highway corridors, and transportation arteries.">
+              <span class="chip-badge badge-urban">🛣️ ROADS</span>
+              <span class="chip-text">Detect primary road networks & highway corridors</span>
+            </button>
+            <button class="chip" data-cat="urban" data-query="Locate industrial facilities, warehouse complexes, and impervious parking lots.">
+              <span class="chip-badge badge-urban">🏗️ INFRA</span>
+              <span class="chip-text">Locate industrial facilities & warehouse complexes</span>
+            </button>
+
+            <!-- 4. Bi-Temporal Change & Disasters -->
+            <button class="chip" data-cat="change" data-query="What changed between these two dates, and where did the change occur?">
+              <span class="chip-badge badge-change">⏱️ CHANGE</span>
+              <span class="chip-text">What changed between these two dates & where?</span>
+            </button>
+            <button class="chip" data-cat="change" data-query="Has the built-up area increased, decreased, or remained unchanged?">
+              <span class="chip-badge badge-change">📈 TREND</span>
+              <span class="chip-text">Has built-up area increased, decreased or unchanged?</span>
+            </button>
+            <button class="chip" data-cat="change" data-query="Map post-disaster flood damage and structural destruction between T1 and T2.">
+              <span class="chip-badge badge-change">🌪️ DISASTER</span>
+              <span class="chip-text">Map post-disaster flood damage & destruction</span>
+            </button>
+            <button class="chip" data-cat="change" data-query="Quantify deforestation and vegetation canopy loss between the two acquisition dates.">
+              <span class="chip-badge badge-change">🌲 FORESTRY</span>
+              <span class="chip-text">Quantify deforestation & canopy loss between dates</span>
+            </button>
+            <button class="chip" data-cat="change" data-query="Detect new construction sites and expansion of impervious surfaces over time.">
+              <span class="chip-badge badge-change">🚧 SPRAWL</span>
+              <span class="chip-text">Detect new construction & impervious expansion</span>
+            </button>
+
+            <!-- 5. Optical-SAR & Multi-Sensor Fusion -->
+            <button class="chip" data-cat="fusion" data-query="Use the optical and SAR images together to identify built-up and water-covered regions.">
+              <span class="chip-badge badge-fusion">📡 FUSION</span>
+              <span class="chip-text">Use optical & SAR together for built-up & water</span>
+            </button>
+            <button class="chip" data-cat="fusion" data-query="Fuse optical multispectral RGB with SAR backscatter to map flooded fields through cloud cover.">
+              <span class="chip-badge badge-fusion">🛰️ ALL-WX</span>
+              <span class="chip-text">Fuse optical RGB + SAR backscatter under cloud cover</span>
+            </button>
+            <button class="chip" data-cat="fusion" data-query="Compare dihedral double-bounce urban reflections in SAR against optical visible rooftops.">
+              <span class="chip-badge badge-fusion">⚡ PHYSICS</span>
+              <span class="chip-text">Compare SAR double-bounce vs optical rooftops</span>
+            </button>
+            <button class="chip" data-cat="fusion" data-query="Detect water accumulation under thick cloud cover using SAR VV/VH polarization.">
+              <span class="chip-badge badge-fusion">🌧️ RADAR</span>
+              <span class="chip-text">Detect water under clouds via SAR VV/VH polarization</span>
+            </button>
+            <button class="chip" data-cat="fusion" data-query="What is the difference between SAR radar backscatter (VV/VH) and optical surface reflectance?">
+              <span class="chip-badge badge-fusion">🔬 SENSORS</span>
+              <span class="chip-text">SAR radar backscatter (VV/VH) vs Optical reflectance</span>
+            </button>
+
+            <!-- 6. Spectral Indices & Physics -->
+            <button class="chip" data-cat="spectral" data-query="Explain NDVI, NDWI, NDBI, SAVI, and EVI formulas and diagnostic thresholds.">
+              <span class="chip-badge badge-spectral">📊 INDICES</span>
+              <span class="chip-text">Explain NDVI, NDWI, NDBI, SAVI & EVI formulas</span>
+            </button>
+            <button class="chip" data-cat="spectral" data-query="How does chlorophyll absorption in Red and cell structure scattering in NIR produce NDVI?">
+              <span class="chip-badge badge-spectral">🌿 BIOLOGY</span>
+              <span class="chip-text">Chlorophyll Red absorption & NIR cellular scattering</span>
+            </button>
+            <button class="chip" data-cat="spectral" data-query="Compare spatial and spectral resolutions of Sentinel-2 vs ISRO Cartosat-2S and RISAT-1A.">
+              <span class="chip-badge badge-spectral">🛰️ SATELLITES</span>
+              <span class="chip-text">Sentinel-2 vs ISRO Cartosat-2S & RISAT-1A specs</span>
+            </button>
+            <button class="chip" data-cat="spectral" data-query="How is Normalized Difference Water Index (NDWI) used to separate water from dark shadows?">
+              <span class="chip-badge badge-spectral">🌡️ NDWI</span>
+              <span class="chip-text">NDWI water separation from mountain shadows</span>
+            </button>
+            <button class="chip" data-cat="spectral" data-query="What is the significance of the Short-Wave Infrared (SWIR) band for moisture detection?">
+              <span class="chip-badge badge-spectral">💧 SWIR</span>
+              <span class="chip-text">SWIR band significance for soil & canopy moisture</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center Column: Visual Viewer & Canvas Overlays -->
+      <section class="panel viewer-panel">
+        <div class="panel-header viewer-header">
+          <div class="viewer-view-switcher">
+            <button id="btn-view-canvas" class="view-switch-btn active">🖼️ 2D Canvas Stage</button>
+            <button id="btn-view-map" class="view-switch-btn">🌍 Interactive GIS Map</button>
+          </div>
+          <div class="viewer-controls">
+            <label class="toggle-control">
+              <input type="checkbox" id="toggle-bboxes" checked />
+              <span>Bounding Boxes</span>
+            </label>
+            <label class="toggle-control">
+              <input type="checkbox" id="toggle-heatmap" checked />
+              <span>Heatmap / Change Mask</span>
+            </label>
+            <div class="slider-control">
+              <span>Mask Opacity</span>
+              <input type="range" id="opacity-slider" min="0" max="100" value="65" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Point & Query Prompt Bar -->
+        <div class="point-query-tip-bar" id="point-query-tip-bar">
+          <span class="tip-badge">🎯 Point-and-Query Ready</span>
+          <span class="tip-text">Click anywhere on the scene or GIS map to drop a pin and execute instant localized diagnostics.</span>
+        </div>
+
+        <div class="canvas-viewport" id="viewport">
+          <!-- 2D Canvas Stage View -->
+          <div class="image-stage" id="stage">
+            <canvas id="base-canvas"></canvas>
+            <canvas id="overlay-canvas"></canvas>
+            <div id="image-badge-a" class="canvas-floating-badge">Image A (Optical)</div>
+          </div>
+          <div class="image-stage hidden" id="stage-b">
+            <canvas id="base-canvas-b"></canvas>
+            <div id="image-badge-b" class="canvas-floating-badge">Image B (SAR / T2)</div>
+          </div>
+
+          <!-- Interactive Leaflet Geospatial Map Container -->
+          <div id="leaflet-map" class="leaflet-container-view hidden"></div>
+
+          <!-- Point-and-Query Diagnostic HUD Card (Floats over active view) -->
+          <div id="point-query-card" class="point-query-card hidden">
+            <div class="pq-header">
+              <div class="pq-title">
+                <span class="pq-icon">📍</span>
+                <strong id="pq-feature-name">Agricultural Crop Parcel</strong>
+              </div>
+              <div class="pq-actions">
+                <button id="btn-pq-speak" class="btn-icon-sm" title="Speak Point Diagnostic">🔊</button>
+                <button id="btn-pq-close" class="btn-icon-sm" title="Close">✕</button>
+              </div>
+            </div>
+            <div class="pq-coords" id="pq-coords-text">Pixel: (128, 140) • Lat/Lon: 18.5204° N, 73.8567° E</div>
+            <div class="pq-metrics-grid">
+              <div class="pq-metric-item">
+                <span class="pq-m-label">NDVI (Veg)</span>
+                <strong class="pq-m-val text-emerald" id="pq-ndvi">+0.68</strong>
+              </div>
+              <div class="pq-metric-item">
+                <span class="pq-m-label">NDWI (Water)</span>
+                <strong class="pq-m-val text-cyan" id="pq-ndwi">-0.32</strong>
+              </div>
+              <div class="pq-metric-item">
+                <span class="pq-m-label">NDBI (Built)</span>
+                <strong class="pq-m-val text-purple" id="pq-ndbi">-0.24</strong>
+              </div>
+              <div class="pq-metric-item">
+                <span class="pq-m-label">Backscatter</span>
+                <strong class="pq-m-val text-amber" id="pq-sar">-14.2 dB</strong>
+              </div>
+            </div>
+            <div class="pq-body">
+              <p id="pq-summary-text">High-vigor vegetation canopy detected with healthy chlorophyll absorption and moist soil substrate.</p>
+              <div class="pq-soil-box" id="pq-soil-box">
+                <span class="soil-tag">🌱 Soil & Crop Advisory:</span>
+                <span id="pq-soil-text">Vertisol (Black Soil) • pH 7.8 • Optimal for Cotton, Soybean, Wheat & Pulses.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="geospatial-meta-bar" id="geo-meta-bar">
+          <span>CRS: <strong id="geo-crs">EPSG:32643</strong></span>
+          <span>Resolution: <strong id="geo-res">10.0m GSD</strong></span>
+          <span>Dimensions: <strong id="geo-dims">256 x 256</strong></span>
+          <span>Format: <strong id="geo-fmt">GeoTIFF</strong></span>
+          <span>Point Coordinates: <strong id="cursor-coords">X: --, Y: --</strong></span>
+        </div>
+      </section>
+
+      <!-- Right Column: Evidence Answer, Custom Chatbot & Auditable Execution Trace -->
+      <section class="panel results-panel">
+        <div class="panel-header">
+          <div class="panel-tabs">
+            <button id="tab-chatbot" class="tab-btn active">💬 Custom Chatbot</button>
+            <button id="tab-audit" class="tab-btn">📋 Audit Trail & Metrics</button>
+          </div>
+          <div class="export-group">
+            <button id="btn-export-pdf" class="btn btn-sm btn-outline">📄 PDF Report</button>
+            <button id="btn-export-json" class="btn btn-sm btn-outline">💾 JSON Trace</button>
+          </div>
+        </div>
+
+        <!-- Tab 1: Custom Chatbot View -->
+        <div id="view-chatbot" class="tab-view active-view">
+          <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-bubble bot-bubble">
+                <div class="bubble-header">
+                  <span class="bot-avatar">🛰️</span>
+                  <strong>SatQuery Custom Chatbot</strong>
+                  <span class="chat-time">Online</span>
+                  <button class="btn-bubble-speak" onclick="speakLastBotMessage(this)" title="Read response out loud">🔊</button>
+                </div>
+                <div class="bubble-content">
+                  Hello! I am your <strong>SatQuery AI Vision-Language & Voice Assistant</strong>.<br/><br/>
+                  Ask me <em>any</em> query — for example:
+                  <ul>
+                    <li>🎙️ <em>Click the microphone button to ask via voice!</em></li>
+                    <li>🌍 <em>Click anywhere on the satellite image or GIS map for <strong>Point-and-Query</strong> diagnostics!</em></li>
+                    <li>🌾 <em>"Suggest crop, vegetable, and soil level with object highlights"</em></li>
+                    <li>🌱 <em>"What crops and fertilizers are best for black cotton soil?"</em></li>
+                    <li>🌊 <em>"Highlight water bodies or rivers in this scene"</em></li>
+                    <li>⏱️ <em>"What changed between pre- and post-event imagery?"</em></li>
+                    <li>📡 <em>"Explain difference between SAR radar and Optical imagery"</em></li>
+                  </ul>
+                  You can chat freely with or without uploading satellite imagery!
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Quick Topic Suggestions -->
+            <div class="chat-quick-suggestions" id="chat-quick-suggestions">
+              <button class="chat-chip" id="chat-chip-point-diagnostic" data-chat="Analyze the agricultural crop vigor, soil moisture, and spectral NDVI at point location x: 128, y: 140.">📍 Point Diagnostic (x:128, y:140)</button>
+              <button class="chat-chip" data-chat="Suggest crop, vegetable, soil level etc object highlight that part">🌾 Crop, Vegetable & Soil</button>
+              <button class="chat-chip" data-chat="What are the best crops, pH, and fertilizer for black cotton soil?">🌱 Black Cotton Soil Guide</button>
+              <button class="chat-chip" data-chat="Evaluate laterite soil profile, pH buffering with lime, and plantation crop suitability.">🌰 Laterite Soil & Lime</button>
+              <button class="chat-chip" data-chat="Recommend drought-tolerant crops and sub-surface irrigation for arid sandy soil.">🏜️ Arid Soil & Drought Crops</button>
+              <button class="chat-chip" data-chat="What soil reclamation strategy and gypsum dosage is required for saline-sodic soil?">🧪 Saline Soil Gypsum Guide</button>
+              <button class="chat-chip" data-chat="Highlight the water body referred to in the query.">🌊 Highlight Water Body</button>
+              <button class="chat-chip" data-chat="Delineate the lake shoreline and calculate total surface water coverage percentage.">💧 Shoreline & Water Metric</button>
+              <button class="chat-chip" data-chat="Identify high-density residential built-up clusters and commercial zones.">🏙️ Urban Built-Up Clusters</button>
+              <button class="chat-chip" data-chat="Highlight the airport runway, taxiway, and tarmac infrastructure.">🛫 Airport Runway Detection</button>
+              <button class="chat-chip" data-chat="What changed between these two dates, and where did the change occur?">⏱️ Bi-Temporal Change Detection</button>
+              <button class="chat-chip" data-chat="Has the built-up area increased, decreased, or remained unchanged?">📈 Built-Up Area Trend</button>
+              <button class="chat-chip" data-chat="What is the difference between SAR radar backscatter and Optical RGB?">📡 SAR vs Optical Physics</button>
+              <button class="chat-chip" data-chat="Compare spatial and spectral resolutions of Sentinel-2 vs ISRO Cartosat-2S and RISAT-1A.">🛰️ Sentinel-2 vs ISRO Satellites</button>
+              <button class="chat-chip" data-chat="Explain NDVI, NDWI, and NDBI formulas and applications">📊 Spectral Indices (NDVI / NDWI)</button>
+              <button class="chat-chip" data-chat="Describe the land-cover and major objects visible in this image.">🗺️ Full Land-Cover Description</button>
+            </div>
+
+            <!-- Chat Input Bar -->
+            <div class="chat-input-bar">
+              <div class="chat-input-mic-wrap">
+                <input type="text" id="chat-query-input" placeholder="Type or click 🎙️ to speak any satellite, agricultural, or soil query..." />
+                <button id="btn-mic-chat" class="btn-mic-trigger-chat" title="Speak Chat Message">
+                  <span class="mic-icon">🎙️</span>
+                </button>
+              </div>
+              <button id="btn-chat-send" class="btn btn-primary btn-chat-send">
+                <span>Send 🚀</span>
+              </button>
+              <button id="btn-chat-clear" class="btn btn-sm btn-outline" title="Reset Session" style="padding:4px 8px; font-size:11px;">🗑️</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Synthesized Output & Audit Trail View -->
+        <div id="view-audit" class="tab-view hidden">
+          <!-- Synthesized Answer Card -->
+          <div class="answer-card" id="answer-card">
+            <div class="card-meta">
+              <span class="inferred-task-badge" id="task-badge">Task: Visual Question Answering</span>
+              <div class="confidence-indicator">
+                <span>Confidence:</span>
+                <div class="confidence-meter">
+                  <div class="confidence-bar" id="confidence-bar" style="width: 92%;"></div>
+                </div>
+                <strong id="confidence-text">92.0%</strong>
+              </div>
+              <button id="btn-answer-speak" class="btn-bubble-speak" title="Speak Synthesized Answer">🔊 Speak</button>
+            </div>
+            <div class="answer-text" id="answer-text">
+              Select a sample scenario or upload remote-sensing imagery, then submit a natural-language query to see the agentic orchestration in action.
+            </div>
+          </div>
+
+          <!-- Quantitative Land Cover / Contributions -->
+          <div class="quantitative-card" id="quant-card">
+            <div class="card-title-sm">Quantitative Remote Sensing Analysis</div>
+            <div class="metric-chips" id="metric-chips">
+              <div class="metric-chip">Water Coverage: <strong id="stat-water">--</strong></div>
+              <div class="metric-chip">Built-Up Area: <strong id="stat-urban">--</strong></div>
+              <div class="metric-chip">Change Ratio: <strong id="stat-change">--</strong></div>
+            </div>
+          </div>
+
+          <!-- Auditable Execution Trace -->
+          <div class="trace-section">
+            <div class="trace-header">
+              <h3>Auditable Execution Trace</h3>
+              <span class="trace-timer" id="total-time">Latency: 0 ms</span>
+            </div>
+            <p class="trace-sub">Observable sequence of tool routing, whitelisted parameters, and output artifacts.</p>
+            <div class="trace-timeline" id="trace-timeline">
+              <div class="timeline-empty">No pipeline runs recorded yet.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Security & Authentication Modal -->
+  <div id="auth-modal" class="auth-modal-overlay hidden">
+    <div class="auth-modal-card">
+      <div class="auth-modal-header">
+        <div class="auth-logo-badge">🛰️ SatQuery AI Security</div>
+        <button id="btn-auth-close" class="btn-auth-close" title="Close">✕</button>
+      </div>
+      <p class="auth-modal-sub">Secure access to remote-sensing analytics, precision agriculture AI, and spatial vision intelligence.</p>
+      
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab-btn active">🔑 Sign In</button>
+        <button id="tab-register" class="auth-tab-btn">📝 Create Account</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="form-login" class="auth-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" class="text-input" placeholder="admin@satquery.ai" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" class="text-input" placeholder="••••••••••••" required />
+        </div>
+        <div id="login-error" class="auth-error-msg hidden"></div>
+        <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block">
+          <span>Authenticate & Launch 🚀</span>
+        </button>
+
+        <!-- Quick-Fill Demo Logins -->
+        <div class="demo-quick-logins">
+          <span class="demo-title">⚡ 1-Click Demo Accounts:</span>
+          <div class="demo-btn-group">
+            <button type="button" class="btn-demo-chip" id="btn-demo-admin">👑 Admin</button>
+            <button type="button" class="btn-demo-chip" id="btn-demo-analyst">🛰️ Analyst</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-register" class="auth-form hidden">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" class="text-input" placeholder="Dr. Elena Rostova" required />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" class="text-input" placeholder="elena.rostova@satquery.ai" required />
+        </div>
+        <div class="form-group">
+          <label>Organization / Department</label>
+          <input type="text" id="reg-org" class="text-input" placeholder="Earth Observation Lab" />
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="reg-role" class="select-input">
+            <option value="Geospatial Analyst">🛰️ Geospatial Analyst</option>
+            <option value="Agronomist & Soil Specialist">🌾 Agronomist & Soil Specialist</option>
+            <option value="Disaster Response Specialist">🌊 Disaster Response Specialist</option>
+            <option value="Researcher">🔬 Research Scientist</option>
+            <option value="Administrator">👑 System Administrator</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Password (min 6 characters)</label>
+          <input type="password" id="reg-password" class="text-input" placeholder="••••••••••••" required />
+        </div>
+        <div id="reg-error" class="auth-error-msg hidden"></div>
+        <button type="submit" id="btn-submit-register" class="btn btn-primary btn-block">
+          <span>Create Secure Account 🚀</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="2d.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

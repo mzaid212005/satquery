@@ -55,10 +55,12 @@ async def add_security_headers(request: Request, call_next):
 app.include_router(auth_router)
 app.include_router(api_router)
 
-# Mount frontend static directory
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+# Mount frontend / public static directory
+STATIC_DIR = Path(__file__).resolve().parent.parent / "public"
+if not STATIC_DIR.exists():
+    STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
+if STATIC_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="frontend")
 
 
 if __name__ == "__main__":
