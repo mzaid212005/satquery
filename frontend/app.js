@@ -89,7 +89,9 @@ const btnAnswerSpeak = document.getElementById("btn-answer-speak");
 // Viewer Mode Switcher & Map Elements
 const btnViewCanvas = document.getElementById("btn-view-canvas");
 const btnViewMap = document.getElementById("btn-view-map");
+const btnView3D = document.getElementById("btn-view-3d");
 const leafletMapContainer = document.getElementById("leaflet-map");
+const globe3DContainer = document.getElementById("globe-3d-container");
 
 // Point-and-Query Diagnostic HUD Card Elements
 const pointQueryCard = document.getElementById("point-query-card");
@@ -703,23 +705,132 @@ function switchViewerMode(mode) {
   if (mode === "canvas") {
     btnViewCanvas.classList.add("active");
     btnViewMap.classList.remove("active");
+    if (btnView3D) btnView3D.classList.remove("active");
     stage.classList.remove("hidden");
     if (uploadedFileB) {
       stageB.classList.remove("hidden");
     }
     leafletMapContainer.classList.add("hidden");
-  } else {
+    if (globe3DContainer) globe3DContainer.classList.add("hidden");
+  } else if (mode === "map") {
     btnViewMap.classList.add("active");
     btnViewCanvas.classList.remove("active");
+    if (btnView3D) btnView3D.classList.remove("active");
     stage.classList.add("hidden");
     stageB.classList.add("hidden");
     leafletMapContainer.classList.remove("hidden");
+    if (globe3DContainer) globe3DContainer.classList.add("hidden");
 
     if (leafletMap) {
       setTimeout(() => {
         leafletMap.invalidateSize();
       }, 100);
     }
+  } else if (mode === "3d") {
+    if (btnView3D) btnView3D.classList.add("active");
+    btnViewCanvas.classList.remove("active");
+    btnViewMap.classList.remove("active");
+    stage.classList.add("hidden");
+    stageB.classList.add("hidden");
+    leafletMapContainer.classList.add("hidden");
+    if (globe3DContainer) globe3DContainer.classList.remove("hidden");
+
+    init3DOrbitalDeck();
+  }
+}
+
+let is3DDeckInitialized = false;
+function init3DOrbitalDeck() {
+  if (!window.SatQuery3DDeck) return;
+  if (!is3DDeckInitialized) {
+    window.SatQuery3DDeck.init("canvas-3d-wrapper", {
+      onCoordinateSelect: (lat, lon) => {
+        // Unlock Web Speech API context on user gesture
+        if (window.speechSynthesis) {
+          try {
+            if (window.speechSynthesis.paused) {
+              window.speechSynthesis.resume();
+            }
+          } catch (e) {}
+        }
+
+        const normX = Math.max(0, Math.min(1, (((lon % 0.05) + 0.05) % 0.05) / 0.05));
+        const normY = Math.max(0, Math.min(1, (((lat % 0.05) + 0.05) % 0.05) / 0.05));
+        const pixelX = Math.round(normX * 256);
+        const pixelY = Math.round(normY * 256);
+
+        updatePointDiagnosticElements(pixelX, pixelY, lat, lon);
+        executePointQuery(normX, normY, lat, lon);
+      },
+      onSatelliteSelect: (spec) => {
+        const altEl = document.getElementById("hud-alt-val");
+        const gsdEl = document.getElementById("hud-gsd-val");
+        if (altEl) altEl.textContent = `${spec.altitude}.0 km`;
+        if (gsdEl) gsdEl.textContent = spec.gsd;
+
+        const lang = voiceLangSelect.value.startsWith("kn")
+          ? `ಉಪಗ್ರಹ ${spec.name} ಟ್ರ್ಯಾಕಿಂಗ್ ಸಕ್ರಿಯವಾಗಿದೆ. ಎತ್ತರ ${spec.altitude} ಕಿಮೀ, ರೆಸಲ್ಯೂಶನ್ ${spec.gsd}.`
+          : `Satellite ${spec.name} tracking engaged. Altitude ${spec.altitude} km, GSD resolution ${spec.gsd}.`;
+        speakText(lang, true);
+      },
+    });
+
+    // Wire spectral mode buttons
+    document.querySelectorAll(".btn-spectral-mode").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn-spectral-mode").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const mode = btn.getAttribute("data-mode");
+        window.SatQuery3DDeck.setSpectralMode(mode);
+      });
+    });
+
+    // Wire satellite chase-cam buttons
+    document.querySelectorAll(".btn-sat-follow").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".btn-sat-follow").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const satId = btn.getAttribute("data-sat");
+        window.SatQuery3DDeck.followSatellite(satId);
+      });
+    });
+
+    // Wire global recon target buttons
+    document.querySelectorAll(".btn-recon-target").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const lat = parseFloat(btn.getAttribute("data-lat"));
+        const lon = parseFloat(btn.getAttribute("data-lon"));
+        const label = btn.getAttribute("data-label");
+        window.SatQuery3DDeck.flyToLocation(lat, lon, label);
+
+        const normX = Math.max(0, Math.min(1, (((lon % 0.05) + 0.05) % 0.05) / 0.05));
+        const normY = Math.max(0, Math.min(1, (((lat % 0.05) + 0.05) % 0.05) / 0.05));
+        const pixelX = Math.round(normX * 256);
+        const pixelY = Math.round(normY * 256);
+        updatePointDiagnosticElements(pixelX, pixelY, lat, lon);
+        executePointQuery(normX, normY, lat, lon);
+      });
+    });
+
+    // Wire sound & auto-rotate buttons
+    const btnSound = document.getElementById("btn-3d-sound-toggle");
+    if (btnSound) {
+      btnSound.addEventListener("click", () => {
+        window.SatQuery3DDeck.soundEnabled = !window.SatQuery3DDeck.soundEnabled;
+        btnSound.classList.toggle("active", window.SatQuery3DDeck.soundEnabled);
+        btnSound.textContent = window.SatQuery3DDeck.soundEnabled ? "🔊 SFX" : "🔇 Mute";
+      });
+    }
+
+    const btnAuto = document.getElementById("btn-3d-autorotate");
+    if (btnAuto) {
+      btnAuto.addEventListener("click", () => {
+        window.SatQuery3DDeck.autoRotate = !window.SatQuery3DDeck.autoRotate;
+        btnAuto.classList.toggle("active", window.SatQuery3DDeck.autoRotate);
+      });
+    }
+
+    is3DDeckInitialized = true;
   }
 }
 
@@ -1403,6 +1514,7 @@ function setupEventListeners() {
   // Viewer Mode Switcher
   btnViewCanvas.addEventListener("click", () => switchViewerMode("canvas"));
   btnViewMap.addEventListener("click", () => switchViewerMode("map"));
+  if (btnView3D) btnView3D.addEventListener("click", () => switchViewerMode("3d"));
 
   // Point-and-Query Close & Speak
   btnPqClose.addEventListener("click", () => {

@@ -6,6 +6,7 @@
   <title>SatQuery AI — Agentic Remote Sensing Vision-Language Assistant</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -337,6 +338,7 @@
           <div class="viewer-view-switcher">
             <button id="btn-view-canvas" class="view-switch-btn active">🖼️ 2D Canvas Stage</button>
             <button id="btn-view-map" class="view-switch-btn">🌍 Interactive GIS Map</button>
+            <button id="btn-view-3d" class="view-switch-btn btn-view-3d">🌐 3D Orbital Command</button>
           </div>
           <div class="viewer-controls">
             <label class="toggle-control">
@@ -374,6 +376,68 @@
 
           <!-- Interactive Leaflet Geospatial Map Container -->
           <div id="leaflet-map" class="leaflet-container-view hidden"></div>
+
+          <!-- 3D Orbital Command Deck Container -->
+          <div id="globe-3d-container" class="globe-3d-container-view hidden">
+            <div id="canvas-3d-wrapper" class="canvas-3d-wrapper"></div>
+            
+            <!-- Sci-Fi Floating Telemetry & Control HUD -->
+            <div class="hud-3d-deck" id="hud-3d-deck">
+              <!-- Top Flight Bar -->
+              <div class="hud-top-bar">
+                <div class="hud-stat-pill">
+                  <span class="hud-label">ORBIT ALT</span>
+                  <strong id="hud-alt-val" class="hud-val text-cyan">505.0 km</strong>
+                </div>
+                <div class="hud-stat-pill">
+                  <span class="hud-label">VELOCITY</span>
+                  <strong class="hud-val text-amber">7.62 km/s</strong>
+                </div>
+                <div class="hud-stat-pill">
+                  <span class="hud-label">SPECTRAL MODE</span>
+                  <strong id="hud-mode-display" class="hud-val text-emerald">RGB Optical (True Color)</strong>
+                </div>
+                <div class="hud-stat-pill">
+                  <span class="hud-label">TARGET GSD</span>
+                  <strong id="hud-gsd-val" class="hud-val text-purple">0.28m PAN</strong>
+                </div>
+                <div class="hud-controls-quick">
+                  <button id="btn-3d-sound-toggle" class="btn-hud-icon active" title="Toggle Tactile Audio FX">🔊 SFX</button>
+                  <button id="btn-3d-autorotate" class="btn-hud-icon active" title="Toggle Auto Orbit">🔄 Auto</button>
+                </div>
+              </div>
+
+              <!-- Left Panel: Multi-Spectral Scanner -->
+              <div class="hud-spectral-panel">
+                <div class="hud-panel-title">📡 Spectral Shaders</div>
+                <button class="btn-spectral-mode active" data-mode="rgb">🌈 True RGB</button>
+                <button class="btn-spectral-mode" data-mode="ndvi">🌿 NDVI Vigor</button>
+                <button class="btn-spectral-mode" data-mode="sar">⚡ SAR Radar</button>
+                <button class="btn-spectral-mode" data-mode="thermal">🔥 Thermal IR</button>
+              </div>
+
+              <!-- Right Panel: Global Target Recon Quick-Locks -->
+              <div class="hud-targets-panel">
+                <div class="hud-panel-title">🎯 Recon Targets</div>
+                <button class="btn-recon-target" data-lat="12.9716" data-lon="77.5946" data-label="ISRO Telemetry (Bengaluru)">🇮🇳 ISRO Bengaluru</button>
+                <button class="btn-recon-target" data-lat="25.5941" data-lon="85.1376" data-label="Ganges River Basin">🌊 Ganges Delta</button>
+                <button class="btn-recon-target" data-lat="-3.4653" data-lon="-62.2159" data-label="Amazon Canopy (Brazil)">🌳 Amazon Forest</button>
+                <button class="btn-recon-target" data-lat="30.0444" data-lon="31.2357" data-label="Nile Agriculture (Egypt)">🏜️ Nile Delta</button>
+                <button class="btn-recon-target" data-lat="36.7783" data-lon="-119.4179" data-label="Central Valley Cropland">🌾 California Valley</button>
+              </div>
+
+              <!-- Bottom Bar: Satellite Fleet Chase-Cam -->
+              <div class="hud-satellites-bar">
+                <span class="hud-sat-label">🛰️ Pilot Chase-Cam:</span>
+                <button class="btn-sat-follow" data-sat="cartosat3">🇮🇳 Cartosat-3 (0.28m)</button>
+                <button class="btn-sat-follow" data-sat="sentinel2">🇪🇺 Sentinel-2A (MSI)</button>
+                <button class="btn-sat-follow" data-sat="risat1a">📡 RISAT-1A (SAR)</button>
+                <button class="btn-sat-follow" data-sat="landsat9">🇺🇸 Landsat-9 (OLI-2)</button>
+                <button class="btn-sat-follow" data-sat="iss">🛰️ Space Station (ISS)</button>
+                <button class="btn-sat-follow active" data-sat="">🌐 Free Orbit</button>
+              </div>
+            </div>
+          </div>
 
           <!-- Point-and-Query Diagnostic HUD Card (Floats over active view) -->
           <div id="point-query-card" class="point-query-card hidden">
@@ -483,7 +547,9 @@
               <button class="chat-chip" data-chat="What is the difference between SAR radar backscatter and Optical RGB?">📡 SAR vs Optical Physics</button>
               <button class="chat-chip" data-chat="Compare spatial and spectral resolutions of Sentinel-2 vs ISRO Cartosat-2S and RISAT-1A.">🛰️ Sentinel-2 vs ISRO Satellites</button>
               <button class="chat-chip" data-chat="Explain the CARTO Dark Matter Basemap API and how to use it in GIS mode.">🏙️ CARTO Dark Map API</button>
+              <button class="chat-chip" data-chat="Explain the 3D Orbital Command Deck and how to track satellites in real-time.">🌐 3D Digital Twin Deck</button>
               <button class="chat-chip" data-chat="Explain NDVI, NDWI, and NDBI formulas and applications">📊 Spectral Indices (NDVI / NDWI)</button>
+
 
               <button class="chat-chip" data-chat="Describe the land-cover and major objects visible in this image.">🗺️ Full Land-Cover Description</button>
             </div>
@@ -628,6 +694,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="2d.js"></script>
+  <script src="3d.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

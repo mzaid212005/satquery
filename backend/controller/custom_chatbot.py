@@ -1063,6 +1063,54 @@ class CustomSatChatbot:
                 "metadata": {"domain": "urban_transportation"},
             }
 
+        # 5a. 3D Orbital Command Deck & Geospatial Digital Twin
+        elif any(w in q_lower for w in [
+            "3d", "3d globe", "digital twin", "orbital command", "chase-cam", "satellite fleet", "spectral shader", "swath",
+            "೩ಡಿ", "ಕಕ್ಷೆ", "೩ಡಿ ಗ್ಲೋಬ್", "ಉಪಗ್ರಹ ಟ್ರ್ಯಾಕಿಂಗ್",
+            "3डी", "ऑर्बिट", "3डी ग्लोब", "डिजिटल ट्विन",
+        ]):
+            if lang_code == "kn":
+                reply = (
+                    "### 🌐 3D ಕಕ್ಷೀಯ ಕಮಾಂಡ್ ಡೆಕ್ ಮತ್ತು ಜಿಯೋಸ್ಪೇಷಿಯಲ್ ಡಿಜಿಟಲ್ ಟ್ವಿನ್\n\n"
+                    "SatQuery AI ನೈಜ-ಸಮಯದ WebGL 3D ಭೂಮಿ ಮತ್ತು ಉಪಗ್ರಹ ಕಕ್ಷೀಯ ಕಮಾಂಡ್ ಡೆಕ್ ಅನ್ನು ಒದಗಿಸುತ್ತದೆ:\n\n"
+                    "#### 1. ಸಂವಾದಾತ್ಮಕ 3D ವೈಶಿಷ್ಟ್ಯಗಳು:\n"
+                    "- **ನೈಜ-ಸಮಯದ ಉಪಗ್ರಹ ಟ್ರ್ಯಾಕಿಂಗ್**: **Sentinel-2A**, **Landsat-9**, **ISRO Cartosat-3**, **RISAT-1A (SAR)** ಮತ್ತು **ISS** ಉಪಗ್ರಹಗಳ ಕಕ್ಷೀಯ ಮಾರ್ಗಗಳು ಮತ್ತು ಸ್ಕ್ಯಾನಿಂಗ್ ಕೋನ್‌ಗಳು.\n"
+                    "- **ಹೊಲೊಗ್ರಾಫಿಕ್ ಟಾರ್ಗೆಟ್ ಲಾಕ್**: 3D ಗ್ಲೋಬ್ ಮೇಲೆ ಎಲ್ಲಿ ಬೇಕಾದರೂ ಕ್ಲಿಕ್ ಮಾಡಿ ಅಕ್ಷಾಂಶ/ರೇಖಾಂಶಗಳನ್ನು ಲೆಕ್ಕಹಾಕಿ ಮತ್ತು ನೈಜ-ಸಮಯದ ಪಾಯಿಂಟ್ ಡಯಾಗ್ನೋಸ್ಟಿಕ್ಸ್ ಪಡೆಯಿರಿ.\n"
+                    "- **ಮಲ್ಟಿ-ಸ್ಪೆಕ್ಟ್ರಲ್ ಶೇಡರ್‌ಗಳು**: True RGB, NDVI ಸಸ್ಯ ಚೈತನ್ಯ ಹೀಟ್‌ಮ್ಯಾಪ್, SAR ರೇಡಾರ್ ಗ್ರಿಡ್, ಮತ್ತು ಥರ್ಮಲ್ IR ವಿಧಾನಗಳು.\n"
+                    "- **ಚೇಸ್-ಕ್ಯಾಮ್ ಮೋಡ್**: ಉಪಗ್ರಹಗಳ ಬೆನ್ನಲ್ಲೇ ಕಕ್ಷೀಯ ವೇಗದಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಚಲಿಸುವ ಪೈಲಟ್ ವೀಕ್ಷಣೆ.\n\n"
+                    "👉 *ಮೇಲ್ಭಾಗದಲ್ಲಿರುವ **🌐 3D Orbital Command** ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಲೈವ್ 3D ಗ್ಲೋಬ್ ಅನ್ನು ಅನ್ವೇಷಿಸಿ.*"
+                )
+            elif lang_code == "hi":
+                reply = (
+                    "### 🌐 3D ऑर्बिटल कमांड डेक और डिजिटल ट्विन\n\n"
+                    "SatQuery AI वास्तविक समय का 3D Earth सिमुलेशन और सैटेलाइट टोही कमांड डेक प्रदान करता है:\n\n"
+                    "#### 1. 3D क्षमताएं:\n"
+                    "- **सैटेलाइट ट्रैकिंग**: **Sentinel-2A**, **Landsat-9**, **ISRO Cartosat-3**, **RISAT-1A (SAR)** और **ISS** की लाइव ऑर्बिट्स।\n"
+                    "- **होलोग्राफिक टारगेट लॉक**: 3D ग्लोब पर कहीं भी क्लिक करके सटीक अक्षांश/देशांतर और पॉइंट डायग्नोस्टिक्स प्राप्त करें।\n"
+                    "- **मल्टी-स्पेक्ट्रल शेडर्स**: True RGB, NDVI वेजिटेशन, SAR रडार और थर्मल IR शेडर स्विचिंग।\n"
+                    "- **चेस-कैम पायलट मोड**: सैटेलाइट के पीछे से वास्तविक समय की ऑर्बिटल उड़ान देखें।\n\n"
+                    "👉 *लाइव 3D पृथ्वी देखने के लिए ऊपर **🌐 3D Orbital Command** पर क्लिक करें।*"
+                )
+            else:
+                reply = (
+                    "### 🌐 3D Orbital Command Deck & Geospatial Digital Twin\n\n"
+                    "SatQuery AI features a real-time WebGL 3D Earth simulation and orbital reconnaissance command deck:\n\n"
+                    "#### 1. Interactive 3D Capabilities:\n"
+                    "- **Real-Time Orbit Tracking**: Follow scientific satellites (**Sentinel-2A**, **Landsat-9**, **ISRO Cartosat-3**, **RISAT-1A SAR**, and the **ISS**) with live orbital velocities (~7.6 km/s) and sensor swath footprint cones.\n"
+                    "- **Holographic Target Lock-On**: Click anywhere on the 3D globe to compute exact Latitude/Longitude, project an animated sonar lock beacon, and trigger localized `/api/point_query` biophysical diagnostics.\n"
+                    "- **Multi-Spectral Shaders**: Toggle between **True-Color RGB**, **NDVI Canopy Vigor Heatmap**, **SAR Microwave Radar Grid**, and **SWIR Thermal Infrared**.\n"
+                    "- **Pilot Chase-Cam**: Lock the camera into high-speed orbital perspective behind any satellite.\n"
+                    "- **Tactile Procedural Audio**: Built-in sci-fi audio effects (radar pings, lock-on tones, spectral swooshes) via Web Audio API.\n\n"
+                    "👉 *Click the **🌐 3D Orbital Command** tab in the center viewer header to explore the live 3D Earth.*"
+                )
+            return {
+                "reply": reply,
+                "task_type": "orbital_3d_command_deck",
+                "confidence": 0.99,
+                "overlays": {},
+                "metadata": {"domain": "geospatial_digital_twin", "mode": "3d_webgl"},
+            }
+
         # 5b. CARTO Dark Map & Geospatial Layer API
         elif any(w in q_lower for w in [
             "carto dark", "dark map", "carto_dark", "carto basemap", "dark matter map", "map api", "tiles api",
