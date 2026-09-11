@@ -252,6 +252,10 @@ async function triggerGoogleSignIn() {
 }
 
 async function initAuth() {
+  // Always start at the 3D Space Station Airlock Entrance / Login Portal
+  exitToAirlockSequence(false);
+
+  // If previous valid token exists, pre-fill user display name
   if (authToken) {
     try {
       const res = await fetch("/api/auth/me", {
@@ -260,15 +264,11 @@ async function initAuth() {
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
-        enterSpaceStationCockpit(false); // fast-forward into workstation
-        return;
       }
     } catch (e) {
       console.warn("Auth check failed:", e);
     }
   }
-  // Not authenticated: stay at airlock portal
-  exitToAirlockSequence(false);
 }
 
 function onAuthenticationSuccess(token, user) {

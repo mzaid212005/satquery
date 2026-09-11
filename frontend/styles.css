@@ -328,8 +328,8 @@ body {
 }
 
 .app-layout.airlock-mode {
-  opacity: 0.15;
-  filter: blur(4px);
+  display: none !important;
+  opacity: 0;
   pointer-events: none;
 }
 
