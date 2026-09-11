@@ -31,5 +31,16 @@
     "created_at": 1789150410.159724,
     "password_hash": "d19c53f3f94982ec03af8993e4cd021f1b9de6a33d2856b34087e8fa3f300115",
     "salt": "b2dccfdf027196ee9567dc73ab7f5bbb"
+  },
+  "astronaut.cooper@nasa.gov": {
+    "id": "usr_g_2106992865fe",
+    "email": "astronaut.cooper@nasa.gov",
+    "full_name": "Joseph Cooper",
+    "role": "Geospatial Analyst",
+    "organization": "Google Earth Observation",
+    "is_active": true,
+    "created_at": 1789165578.8954282,
+    "password_hash": "f48f1679f2aa184dc5d739aa95a164328294107e9c27310c32053adc07639d2b",
+    "salt": "7516ef6191b2b340e6eb1e095e9fc662"
   }
 }

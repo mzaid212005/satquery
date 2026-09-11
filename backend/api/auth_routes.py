@@ -3,6 +3,8 @@ SatQuery AI — Authentication & Security API Routes
 Endpoints for user registration, credential verification, session validation, and logout.
 """
 
+import base64
+import json
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -14,6 +16,13 @@ from backend.security.auth import (
 )
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Security & Authentication"])
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -105,6 +114,38 @@ def login_user(req: LoginRequest):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    token = generate_token(user)
+    return AuthResponse(status="success", token=token, user=user)
+
+
+@auth_router.post("/google", response_model=AuthResponse)
+def google_auth(req: GoogleAuthRequest):
+    """Authenticate or auto-provision a user using Google OAuth ID token or profile."""
+    email = req.email
+    full_name = req.name or "Google User"
+    picture = req.picture
+
+    if req.credential:
+        try:
+            parts = req.credential.split(".")
+            if len(parts) >= 2:
+                payload_b64 = parts[1]
+                padding = "=" * (4 - len(payload_b64) % 4) if len(payload_b64) % 4 != 0 else ""
+                decoded = base64.urlsafe_b64decode((payload_b64 + padding).encode("utf-8")).decode("utf-8")
+                token_data = json.loads(decoded)
+                email = token_data.get("email", email)
+                full_name = token_data.get("name") or token_data.get("given_name") or full_name
+                picture = token_data.get("picture", picture)
+        except Exception:
+            pass
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to extract valid email from Google credential.",
+        )
+
+    user = user_repository.get_or_create_google_user(email=email, full_name=full_name, picture=picture)
     token = generate_token(user)
     return AuthResponse(status="success", token=token, user=user)
 

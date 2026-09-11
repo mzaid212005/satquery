@@ -212,5 +212,30 @@ class UserRepository:
             return None
         return User(**user_db.model_dump())
 
+    def get_or_create_google_user(self, email: str, full_name: str, picture: Optional[str] = None) -> User:
+        email_clean = email.lower().strip()
+        db = self._load_db()
+        if email_clean in db:
+            raw = db[email_clean]
+            return User(**raw)
+
+        user_id = f"usr_g_{secrets.token_hex(6)}"
+        pwd_hash, salt = hash_password(secrets.token_hex(16))
+
+        record = {
+            "id": user_id,
+            "email": email_clean,
+            "full_name": full_name.strip() or "Google User",
+            "role": "Geospatial Analyst",
+            "organization": "Google Earth Observation",
+            "is_active": True,
+            "created_at": time.time(),
+            "password_hash": pwd_hash,
+            "salt": salt,
+        }
+        db[email_clean] = record
+        self._save_db(db)
+        return User(**record)
+
 
 user_repository = UserRepository()

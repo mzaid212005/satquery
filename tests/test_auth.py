@@ -120,3 +120,23 @@ def test_custom_chatbot_kannada():
     assert res_kn["sender"] == "SatQuery Custom Chatbot"
     assert "ಕೃಷಿ" in res_kn["reply"] or "ಮಣ್ಣು" in res_kn["reply"]
     assert "trace" in res_kn or "execution_trace" in res_kn
+
+
+def test_google_auth_endpoint():
+    """Verify POST /api/auth/google auto-provisions and returns JWT."""
+    response = client.post(
+        "/api/auth/google",
+        json={
+            "email": "astronaut.cooper@nasa.gov",
+            "name": "Joseph Cooper",
+            "picture": "https://example.com/cooper.jpg",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert "token" in data
+    assert data["user"]["email"] == "astronaut.cooper@nasa.gov"
+    assert data["user"]["full_name"] == "Joseph Cooper"
+    assert data["user"]["role"] == "Geospatial Analyst"
+
