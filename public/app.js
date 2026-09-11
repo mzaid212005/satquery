@@ -1,5 +1,5 @@
 // SatQuery AI — Frontend Application Controller
-// Space Station Mission Control Cockpit, Google Auth & Geospatial Remote Sensing Engine
+// Interstellar Spacecraft Cockpit, 3D Dashboard Motion & Google Authentication
 
 let currentUser = null;
 let authToken = localStorage.getItem("satquery_auth_token") || null;
@@ -89,8 +89,9 @@ const btnViewCanvas = document.getElementById("btn-view-canvas");
 const btnViewMap = document.getElementById("btn-view-map");
 const leafletMapContainer = document.getElementById("leaflet-map");
 
-// Cockpit Controls & Airlock Elements
+// Cockpit Controls, Airlock & 3D Dashboard Elements
 const airlockPortalOverlay = document.getElementById("airlock-portal-overlay");
+const cockpit3dStage = document.getElementById("cockpit-3d-stage");
 const appLayout = document.getElementById("app-layout");
 const btnGoogleSignIn = document.getElementById("btn-google-signin");
 const btnAirlockAdmin = document.getElementById("btn-airlock-admin");
@@ -150,9 +151,11 @@ const userAvatar = document.getElementById("user-avatar");
 // INITIALIZATION
 // =============================================================================
 async function init() {
-  // 1. Initialize Photorealistic 3D Space Station & Cockpit
+  // 1. Initialize Interstellar 3D Spacecraft & Dynamic Motion Engine
   if (window.SatQuery3DDeck) {
-    window.SatQuery3DDeck.init("bg-canvas-3d-wrapper");
+    window.SatQuery3DDeck.init("bg-canvas-3d-wrapper", {
+      onMotionUpdate: handle3DMotionUpdate
+    });
   }
 
   // 2. Setup Event Listeners & Modules
@@ -161,7 +164,7 @@ async function init() {
   initLeafletMap();
   initGoogleIdentityServices();
 
-  // 3. Check Session / Airlock State
+  // 3. Always Start at Airlock Entrance
   await initAuth();
 
   validationPill.className = "pill pill-success";
@@ -177,10 +180,37 @@ async function init() {
 }
 
 // =============================================================================
+// 3D DASHBOARD DYNAMIC PERSPECTIVE & MOTION SYNCHRONIZATION
+// =============================================================================
+function handle3DMotionUpdate(motion) {
+  if (!appLayout) return;
+
+  if (typeof motion === "number") {
+    // Flight progress t: 0 to 1
+    const t = motion;
+    const zTranslate = -600 * (1 - t);
+    const scaleVal = 0.5 + 0.5 * t;
+    const opacityVal = Math.min(1, t * 1.5);
+    appLayout.style.transform = `translateZ(${zTranslate}px) scale(${scaleVal})`;
+    appLayout.style.opacity = opacityVal;
+    return;
+  }
+
+  // Real-time Parallax Tilt & Sway
+  if (motion.state === "WORKSTATION") {
+    const tiltX = (motion.mouseY * -5.0 + motion.swayY * 15.0).toFixed(2);
+    const tiltY = (motion.mouseX * 6.5 + motion.swayX * 15.0).toFixed(2);
+    const moveX = (motion.mouseX * 12.0).toFixed(1);
+    const moveY = (motion.mouseY * -8.0).toFixed(1);
+
+    appLayout.style.transform = `translate3d(${moveX}px, ${moveY}px, 0px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+  }
+}
+
+// =============================================================================
 // GOOGLE AUTHENTICATION & AIRLOCK ACCESS
 // =============================================================================
 function initGoogleIdentityServices() {
-  // If Google SDK is present, wire callback
   if (window.google && window.google.accounts && window.google.accounts.id) {
     try {
       window.google.accounts.id.initialize({
@@ -198,12 +228,11 @@ function initGoogleIdentityServices() {
         });
       }
     } catch (e) {
-      console.warn("Google GIS init fallback:", e);
+      console.warn("Google GIS init:", e);
     }
   }
 }
 
-// Global callback for Google GSI
 window.handleGoogleCredential = async function(response) {
   try {
     const res = await fetch("/api/auth/google", {
@@ -221,9 +250,7 @@ window.handleGoogleCredential = async function(response) {
   }
 };
 
-// Fallback Google Sign-In button trigger (Works instantly in all environments)
 async function triggerGoogleSignIn() {
-  // If Google GIS is active and client ID configured, prompt One-Tap or Google OAuth
   if (window.google && window.google.accounts && window.google.accounts.id) {
     try {
       window.google.accounts.id.prompt();
@@ -252,10 +279,9 @@ async function triggerGoogleSignIn() {
 }
 
 async function initAuth() {
-  // Always start at the 3D Space Station Airlock Entrance / Login Portal
+  // Always start at the Airlock Entrance
   exitToAirlockSequence(false);
 
-  // If previous valid token exists, pre-fill user display name
   if (authToken) {
     try {
       const res = await fetch("/api/auth/me", {
@@ -279,7 +305,6 @@ function onAuthenticationSuccess(token, user) {
 }
 
 function enterSpaceStationCockpit(playFlight = true) {
-  // Hide Airlock Portal Overlay
   if (airlockPortalOverlay) {
     airlockPortalOverlay.classList.add("hidden");
   }
@@ -288,7 +313,6 @@ function enterSpaceStationCockpit(playFlight = true) {
     appLayout.classList.remove("airlock-mode");
   }
 
-  // 3D Cinematic Camera Flight into Cockpit Seat
   if (window.SatQuery3DDeck) {
     if (playFlight) {
       window.SatQuery3DDeck.enterCockpit(() => {
@@ -334,7 +358,7 @@ function setCurrentUser(user) {
   if (user) {
     userDisplayName.textContent = user.full_name || user.email;
     userRoleTag.textContent = `👑 ${user.role || "Analyst"}`;
-    userAvatar.textContent = user.role === "Administrator" ? "👑" : "🛰️";
+    userAvatar.textContent = user.role === "Administrator" ? "👑" : "🛸";
   } else {
     userDisplayName.textContent = "Crew Member";
     userRoleTag.textContent = "🔒 Auth Required";
@@ -402,7 +426,7 @@ async function handleRegisterSubmit(e) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ full_name, email, password, role, organization: "SatQuery Station Alpha" }),
+      body: JSON.stringify({ full_name, email, password, role, organization: "Endurance Station Alpha" }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Registration failed");
@@ -445,7 +469,7 @@ function initVoiceAssistant() {
       activeSpeechRecognition.interimResults = true;
       activeSpeechRecognition.lang = getSelectedLanguage();
     } catch (e) {
-      console.warn("Speech recognition initialization:", e);
+      console.warn("Speech recognition init:", e);
     }
   }
 
@@ -547,7 +571,7 @@ function startListening(targetInput, micButton, autoSubmitCallback = null) {
     targetInput.value = transcript;
   };
 
-  activeSpeechRecognition.onerror = (err) => {
+  activeSpeechRecognition.onerror = () => {
     resetMicUI();
   };
 
@@ -822,7 +846,7 @@ async function handleChatSubmit(customText = null) {
   chatQueryInput.value = "";
   appendChatBubble("user", query);
 
-  const loadingBubble = appendChatBubble("bot", "🛰️ Analyzing mission query...");
+  const loadingBubble = appendChatBubble("bot", "🛸 Analyzing mission query...");
 
   try {
     const res = await fetch("/api/chat", {
@@ -861,7 +885,7 @@ function appendChatBubble(sender, text) {
   if (sender === "user") {
     bubble.innerHTML = `
       <div class="bubble-header">
-        <strong>${currentUser ? currentUser.full_name : "Analyst"}</strong>
+        <strong>${currentUser ? currentUser.full_name : "Crew Member"}</strong>
         <span class="chat-time">${timeStr}</span>
       </div>
       <div class="bubble-content">${text}</div>
@@ -869,7 +893,7 @@ function appendChatBubble(sender, text) {
   } else {
     bubble.innerHTML = `
       <div class="bubble-header">
-        <span class="bot-avatar">🛰️</span>
+        <span class="bot-avatar">🛸</span>
         <strong>SatQuery Mission AI</strong>
         <span class="chat-time">${timeStr}</span>
         <button class="btn-bubble-speak" onclick="speakLastBotMessage(this)" title="Read response out loud">🔊</button>
@@ -912,11 +936,11 @@ function renderOverlays() {
       const w = ((xmax - xmin) / 1000) * overlayCanvas.width;
       const h = ((ymax - ymin) / 1000) * overlayCanvas.height;
 
-      ctx.strokeStyle = "#38bdf8";
+      ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, w, h);
 
-      ctx.fillStyle = "rgba(56, 189, 248, 0.85)";
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(x, Math.max(0, y - 16), ctx.measureText(box.label).width + 10, 16);
       ctx.fillStyle = "#000000";
       ctx.font = "bold 10px JetBrains Mono";
@@ -1008,7 +1032,6 @@ function handleFileSelected(file, tag) {
 // EVENT LISTENERS BINDING
 // =============================================================================
 function setupEventListeners() {
-  // Voice Controls
   btnToggleVoice.addEventListener("click", () => {
     voiceEnabled = !voiceEnabled;
     voiceIcon.textContent = voiceEnabled ? "🔊" : "🔇";
@@ -1030,11 +1053,9 @@ function setupEventListeners() {
     }
   });
 
-  // Viewer Switcher
   btnViewCanvas.addEventListener("click", () => switchViewerMode("canvas"));
   btnViewMap.addEventListener("click", () => switchViewerMode("map"));
 
-  // Cockpit View Navigation
   btnCockpitWorkstation.addEventListener("click", () => {
     btnCockpitWorkstation.classList.add("active");
     btnCockpitViewport.classList.remove("active");
@@ -1047,7 +1068,6 @@ function setupEventListeners() {
     if (window.SatQuery3DDeck) window.SatQuery3DDeck.lookAtViewport();
   });
 
-  // Google Sign-In & Airlock FastPass
   if (btnGoogleSignIn) {
     btnGoogleSignIn.addEventListener("click", triggerGoogleSignIn);
   }
@@ -1068,7 +1088,6 @@ function setupEventListeners() {
     });
   }
 
-  // Point & Query Reticle Close & Speak
   btnPqClose.addEventListener("click", () => {
     pointQueryCard.classList.add("hidden");
     activePointReticle = null;
@@ -1079,14 +1098,12 @@ function setupEventListeners() {
     if (lastPqSpeech) speakText(lastPqSpeech, true);
   });
 
-  // Auth Header Controls
   btnHeaderLogout.addEventListener("click", () => exitToAirlockSequence(true));
   tabLogin.addEventListener("click", () => switchAuthTab("login"));
   tabRegister.addEventListener("click", () => switchAuthTab("register"));
   formLogin.addEventListener("submit", handleLoginSubmit);
   formRegister.addEventListener("submit", handleRegisterSubmit);
 
-  // Canvas Click for Point-and-Query
   overlayCanvas.addEventListener("click", (e) => {
     const rect = overlayCanvas.getBoundingClientRect();
     const scaleX = overlayCanvas.width / rect.width;
@@ -1137,18 +1154,17 @@ function setupEventListeners() {
       chatMessages.innerHTML = `
         <div class="chat-bubble bot-bubble">
           <div class="bubble-header">
-            <span class="bot-avatar">🛰️</span>
+            <span class="bot-avatar">🛸</span>
             <strong>SatQuery Mission AI</strong>
             <span class="chat-time">Online</span>
             <button class="btn-bubble-speak" onclick="speakLastBotMessage(this)" title="Read response out loud">🔊</button>
           </div>
-          <div class="bubble-content">Workstation session cleared. Ask any precision agriculture, soil, or remote-sensing query.</div>
+          <div class="bubble-content">Workstation session reset. Ask any remote sensing, agricultural, or soil query.</div>
         </div>
       `;
     });
   }
 
-  // Category Filtering & Query Library
   const catPills = document.querySelectorAll(".cat-pill");
   const queryChips = document.querySelectorAll(".chip");
   const querySearchInput = document.getElementById("query-search-input");

@@ -1,16 +1,19 @@
 /**
- * SatQuery AI — Photorealistic Space Station & Cockpit Digital Twin Engine
- * Cinematic 3D space station mission control module inspired by Interstellar.
+ * SatQuery AI — Interstellar Spacecraft 3D Engine & Cockpit Kinematics
+ * Photorealistic 3D Endurance Command Module & Ranger Flight Deck
  * 
  * Features:
- * - Realistic 3D Spacecraft Interior Hull: Textured metallic bulkheads, matte titanium panels, structural ribs, cockpit console table, and interior warm/cool accent lights.
- * - Realistic Earth Observation Viewport: Curved cockpit window showing photorealistic 3D Earth (bump relief, specular oceans, dynamic atmospheric Rayleigh limb glow, independent cloud layer, sun flare, and starfield).
- * - Multi-Monitor Physical Workstation Mounts with realistic bezels, hardware status LEDs, and console controls.
- * - Cinematic Camera Flight Choreography:
- *    * Airlock Entry Position (Pre-Authentication)
- *    * Warp Glide through airlock into the pilot's command seat (Post-Authentication)
- *    * Realistic cockpit breathing parallax and observation modes
- * - Procedural Web Audio Synthesizer (Airlock hiss, computer boot chime, tactile telemetry chirps).
+ * - High-Contrast Black & White Interstellar Spacecraft Aesthetics:
+ *   * Matte Arctic White ceramic heat tiles + Obsidian Black structural bulkheads & ribs.
+ *   * Octagonal Endurance docking airlock with mechanical locking latches.
+ *   * Dual pilot console flight sticks, throttle levers, conduits, and monitor mounting arms.
+ *   * Rotating 12-module Endurance ring visible in deep orbit outside the viewport.
+ * - Photorealistic Earth: Specular ocean shine, Rayleigh atmospheric limb scattering, cloud layer.
+ * - Dynamic 3D Dashboard Motion Synchronization:
+ *   * Real-time camera & parallax coordinate broadcasting to 3D CSS dashboard.
+ *   * Smooth zero-g microgravity floating sway.
+ *   * Cinematic airlock-to-cockpit camera flight and workstation docking.
+ * - Procedural Web Audio: Airlock decompression hiss, workstation power chime, mechanical clicks.
  */
 
 class SatQuery3DDeck {
@@ -29,49 +32,47 @@ class SatQuery3DDeck {
     this.cloudsMesh = null;
     this.atmosphereMesh = null;
     this.starfield = null;
-    this.cockpitGroup = null;
-    this.cockpitLights = [];
-    this.satellites = [];
-    this.activeLockBeacon = null;
+    this.enduranceRing = null;
 
-    // Camera Kinematics
+    // Cockpit & Interstellar Structures
+    this.cockpitGroup = null;
+    this.joysticks = [];
+    this.satellites = [];
+
+    // Camera Kinematics & States
     this.cameraState = "AIRLOCK"; // "AIRLOCK" | "TRANSITION" | "WORKSTATION" | "VIEWPORT"
-    this.cameraTargetPos = new THREE.Vector3(0, 1.2, 14);
-    this.cameraTargetLook = new THREE.Vector3(0, 0, 0);
-    this.camTransitionProgress = 1;
+    this.posAirlock = { pos: new THREE.Vector3(0, 1.4, 14.5), look: new THREE.Vector3(0, 0, -5) };
+    this.posWorkstation = { pos: new THREE.Vector3(0, 0.45, 2.5), look: new THREE.Vector3(0, 0.25, -2) };
+    this.posViewport = { pos: new THREE.Vector3(0, 1.8, -4.8), look: new THREE.Vector3(0, 0, -30) };
+
     this.camStartPos = new THREE.Vector3();
     this.camEndPos = new THREE.Vector3();
     this.camStartLook = new THREE.Vector3();
     this.camEndLook = new THREE.Vector3();
 
-    // Workstation & Cockpit Positions
-    this.posAirlock = { pos: new THREE.Vector3(0, 1.4, 13.5), look: new THREE.Vector3(0, 0, -5) };
-    this.posWorkstation = { pos: new THREE.Vector3(0, 0.45, 2.6), look: new THREE.Vector3(0, 0.25, -2) };
-    this.posViewport = { pos: new THREE.Vector3(0, 1.8, -4.5), look: new THREE.Vector3(0, 0, -25) };
-
-    // Mouse Parallax
+    // Mouse & Parallax Motion
     this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    this.clock = new THREE.Clock();
+
+    // Motion Synchronization Callback for 3D Dashboard
+    this.onMotionUpdate = null;
 
     // Audio Context
     this.audioCtx = null;
     this.soundEnabled = true;
 
-    // Callbacks
-    this.onCoordinateSelect = null;
-    this.onSatelliteSelect = null;
-
-    // Satellite Specs
+    // Orbiting Satellites Specs
     this.satelliteSpecs = [
-      { id: "cartosat3", name: "ISRO Cartosat-3", agency: "ISRO", altitude: 505, radius: 24, speed: 0.005, inclination: 0.45, color: 0xffaa00 },
-      { id: "sentinel2", name: "ESA Sentinel-2A", agency: "ESA", altitude: 786, radius: 26, speed: 0.004, inclination: 0.75, color: 0x00f0ff },
-      { id: "risat1a", name: "ISRO RISAT-1A (SAR)", agency: "ISRO", altitude: 529, radius: 25, speed: 0.0045, inclination: -0.55, color: 0x00ff88 },
-      { id: "landsat9", name: "NASA Landsat-9", agency: "NASA", altitude: 705, radius: 27, speed: 0.0035, inclination: 0.35, color: 0xff3366 },
-      { id: "iss", name: "ISS (Space Station Alpha)", agency: "International", altitude: 420, radius: 22, speed: 0.006, inclination: 0.85, color: 0xffffff },
+      { id: "cartosat3", name: "ISRO Cartosat-3", radius: 24, speed: 0.004, inclination: 0.45, color: 0xffffff },
+      { id: "sentinel2", name: "ESA Sentinel-2A", radius: 26, speed: 0.0035, inclination: 0.75, color: 0x38bdf8 },
+      { id: "risat1a", name: "ISRO RISAT-1A (SAR)", radius: 25, speed: 0.0038, inclination: -0.55, color: 0x10b981 },
+      { id: "landsat9", name: "NASA Landsat-9", radius: 27, speed: 0.003, inclination: 0.35, color: 0xf59e0b },
+      { id: "endurance", name: "Endurance Station Alpha", radius: 22, speed: 0.0045, inclination: 0.85, color: 0xffffff },
     ];
   }
 
   /**
-   * Initialize the 3D Canvas & WebGL Scene
+   * Initialize 3D Engine & Scene
    */
   init(containerId = "bg-canvas-3d-wrapper", options = {}) {
     if (this.isInitialized) return;
@@ -84,18 +85,17 @@ class SatQuery3DDeck {
       document.body.prepend(this.container);
     }
 
-    if (options.onCoordinateSelect) this.onCoordinateSelect = options.onCoordinateSelect;
-    if (options.onSatelliteSelect) this.onSatelliteSelect = options.onSatelliteSelect;
+    if (options.onMotionUpdate) this.onMotionUpdate = options.onMotionUpdate;
 
     const width = window.innerWidth || 1280;
     const height = window.innerHeight || 800;
 
     // 1. Scene
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x02050e, 0.012);
+    this.scene.fog = new THREE.FogExp2(0x04060a, 0.012);
 
     // 2. Camera
-    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 2000);
+    this.camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 2500);
     this.camera.position.copy(this.posAirlock.pos);
     this.camera.lookAt(this.posAirlock.look);
 
@@ -104,44 +104,44 @@ class SatQuery3DDeck {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.container.appendChild(this.renderer.domElement);
 
-    // 4. Photorealistic Space Environment & Earth
+    // 4. Build Deep Space & Earth
     this.buildDeepSpace();
 
-    // 5. Realistic Physical Spacecraft Cockpit Architecture
-    this.buildCockpitInterior();
+    // 5. Build Interstellar Spacecraft Structures (White & Black Theme)
+    this.buildInterstellarCockpit();
 
-    // 6. Satellites
+    // 6. Build Rotating Endurance Spacecraft Ring & Satellites
     this.buildSatellites();
 
-    // 7. Event Handlers
+    // 7. Event Listeners
     this.bindEvents();
 
     this.isInitialized = true;
     this.animate();
 
-    console.log("[SatQuery 3D] Photorealistic Space Station & Cockpit initialized.");
+    console.log("[SatQuery 3D] Interstellar Cockpit & 3D Motion Engine initialized.");
   }
 
   /**
-   * Build Deep Space Starfield, Lighting & 3D Earth Globe
+   * Build Deep Space, Starfield, Solar Illumination & 3D Earth Globe
    */
   buildDeepSpace() {
     this.spaceGroup = new THREE.Group();
-    this.spaceGroup.position.set(0, 0, -35); // Position Earth outside the cockpit viewport
+    this.spaceGroup.position.set(0, 0, -40);
     this.scene.add(this.spaceGroup);
 
-    // 1. Deep Starfield
+    // 1. Starfield
     const starGeo = new THREE.BufferGeometry();
-    const starCount = 2000;
+    const starCount = 2200;
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
 
     for (let i = 0; i < starCount * 3; i += 3) {
-      const r = 300 + Math.random() * 200;
+      const r = 350 + Math.random() * 250;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
 
@@ -149,69 +149,66 @@ class SatQuery3DDeck {
       positions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i + 2] = r * Math.cos(phi);
 
-      const brightness = 0.7 + Math.random() * 0.3;
-      colors[i] = brightness;
-      colors[i + 1] = brightness * (0.9 + Math.random() * 0.1);
-      colors[i + 2] = brightness * (1.0);
+      const b = 0.75 + Math.random() * 0.25;
+      colors[i] = b;
+      colors[i + 1] = b * (0.95 + Math.random() * 0.05);
+      colors[i + 2] = 1.0;
     }
 
     starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     starGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 1.5,
+      size: 1.4,
       vertexColors: true,
       transparent: true,
       opacity: 0.9,
     });
-
     this.starfield = new THREE.Points(starGeo, starMat);
     this.scene.add(this.starfield);
 
-    // 2. Solar Directional Light
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
-    sunLight.position.set(60, 40, 50);
+    // 2. Solar Lighting
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    sunLight.position.set(70, 45, 60);
     this.scene.add(sunLight);
 
-    const spaceAmbient = new THREE.AmbientLight(0x0a1428, 1.0);
+    const spaceAmbient = new THREE.AmbientLight(0x101828, 1.2);
     this.scene.add(spaceAmbient);
 
-    // 3. Earth Group
+    // 3. Earth Globe
     this.earthGroup = new THREE.Group();
     this.spaceGroup.add(this.earthGroup);
 
-    // Procedural High-Res Earth Texture
-    const earthCanvas = this.generatePhotorealisticEarthCanvas();
+    const earthCanvas = this.generateEarthCanvas();
     const earthTexture = new THREE.CanvasTexture(earthCanvas);
     earthTexture.wrapS = THREE.RepeatWrapping;
 
-    const earthGeo = new THREE.SphereGeometry(14, 64, 64);
+    const earthGeo = new THREE.SphereGeometry(15, 64, 64);
     const earthMat = new THREE.MeshStandardMaterial({
       map: earthTexture,
-      roughness: 0.6,
-      metalness: 0.15,
+      roughness: 0.55,
+      metalness: 0.2,
     });
-
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.earthGroup.add(this.earthMesh);
 
-    // Cloud Layer
-    const cloudCanvas = this.generatePhotorealisticCloudCanvas();
+    // Clouds
+    const cloudCanvas = this.generateCloudCanvas();
     const cloudTexture = new THREE.CanvasTexture(cloudCanvas);
     cloudTexture.wrapS = THREE.RepeatWrapping;
 
-    const cloudGeo = new THREE.SphereGeometry(14.2, 48, 48);
+    const cloudGeo = new THREE.SphereGeometry(15.22, 48, 48);
     const cloudMat = new THREE.MeshStandardMaterial({
       map: cloudTexture,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.48,
       blending: THREE.AdditiveBlending,
     });
     this.cloudsMesh = new THREE.Mesh(cloudGeo, cloudMat);
     this.earthGroup.add(this.cloudsMesh);
 
-    // Atmospheric Rayleigh Scattering Glow
-    const atmoGeo = new THREE.SphereGeometry(15.4, 48, 48);
+    // Rayleigh Scattering Atmosphere
+    const atmoGeo = new THREE.SphereGeometry(16.5, 48, 48);
     const atmoMat = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec3 vNormal;
@@ -223,8 +220,8 @@ class SatQuery3DDeck {
       fragmentShader: `
         varying vec3 vNormal;
         void main() {
-          float intensity = pow(0.62 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.8);
-          gl_FragColor = vec4(0.2, 0.65, 1.0, 1.0) * intensity;
+          float intensity = pow(0.64 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.6);
+          gl_FragColor = vec4(0.3, 0.75, 1.0, 1.0) * intensity;
         }
       `,
       blending: THREE.AdditiveBlending,
@@ -236,80 +233,48 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Procedural Photorealistic Earth Canvas
+   * Procedural Earth Canvas
    */
-  generatePhotorealisticEarthCanvas() {
+  generateEarthCanvas() {
     const canvas = document.createElement("canvas");
     canvas.width = 2048;
     canvas.height = 1024;
     const ctx = canvas.getContext("2d");
 
-    // Deep Specular Oceans
     const oceanGrad = ctx.createLinearGradient(0, 0, 0, 1024);
-    oceanGrad.addColorStop(0, "#061324");
-    oceanGrad.addColorStop(0.2, "#0a2240");
-    oceanGrad.addColorStop(0.5, "#0d3158");
-    oceanGrad.addColorStop(0.8, "#0a2240");
-    oceanGrad.addColorStop(1, "#061324");
+    oceanGrad.addColorStop(0, "#051120");
+    oceanGrad.addColorStop(0.2, "#081e38");
+    oceanGrad.addColorStop(0.5, "#0c2c50");
+    oceanGrad.addColorStop(0.8, "#081e38");
+    oceanGrad.addColorStop(1, "#051120");
     ctx.fillStyle = oceanGrad;
     ctx.fillRect(0, 0, 2048, 1024);
 
-    // Continents & Landmasses
     const continents = [
-      // Eurasia & India
       [[1100, 300], [1350, 260], [1550, 320], [1500, 480], [1300, 520], [1200, 580], [1150, 540], [1120, 440], [1050, 360]],
-      // Indian Subcontinent (Prominent)
       [[1220, 480], [1280, 490], [1270, 580], [1240, 620], [1210, 560]],
-      // Africa
       [[950, 420], [1080, 430], [1120, 560], [1060, 740], [980, 720], [900, 560]],
-      // North America
       [[300, 220], [550, 200], [620, 320], [520, 440], [420, 480], [320, 380]],
-      // South America
       [[460, 500], [580, 540], [600, 680], [520, 840], [440, 740], [430, 580]],
-      // Australia
       [[1450, 640], [1620, 630], [1650, 760], [1520, 780], [1430, 720]],
-      // Antarctica
       [[0, 920], [2048, 920], [2048, 1024], [0, 1024]],
     ];
 
     continents.forEach((poly, idx) => {
       ctx.beginPath();
       ctx.moveTo(poly[0][0], poly[0][1]);
-      for (let i = 1; i < poly.length; i++) {
-        ctx.lineTo(poly[i][0], poly[i][1]);
-      }
+      for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]);
       ctx.closePath();
-
-      // Realistic vegetation / land-cover tones
-      if (idx === 1) {
-        // India (Lush agricultural green & Deccan plateau)
-        ctx.fillStyle = "#2d5a3f";
-      } else if (idx === 6) {
-        // Antarctica (Ice cap)
-        ctx.fillStyle = "#e2e8f0";
-      } else if (idx === 2) {
-        // Africa (Savanna / Sahara beige to central forest)
-        ctx.fillStyle = "#4a4e32";
-      } else {
-        ctx.fillStyle = "#274834";
-      }
+      ctx.fillStyle = idx === 1 ? "#26573c" : idx === 6 ? "#e2e8f0" : idx === 2 ? "#42472d" : "#224430";
       ctx.fill();
-
-      // Subtle coastline elevation rim
       ctx.lineWidth = 2;
       ctx.strokeStyle = "rgba(74, 222, 128, 0.4)";
       ctx.stroke();
     });
 
-    // Night-side city lights dots
-    ctx.fillStyle = "rgba(255, 230, 140, 0.75)";
-    const cityLights = [
-      [1245, 545], [1235, 520], [1250, 500], // India hubs
-      [980, 320], [1010, 310], [960, 340],  // Europe hubs
-      [420, 360], [450, 380], [360, 340],  // US hubs
-      [1620, 380], [1580, 420],             // East Asia hubs
-    ];
-    cityLights.forEach(([cx, cy]) => {
+    // Night city light sparkles
+    ctx.fillStyle = "rgba(255, 235, 160, 0.85)";
+    [[1245, 545], [1235, 520], [1250, 500], [980, 320], [1010, 310], [420, 360], [450, 380], [1620, 380]].forEach(([cx, cy]) => {
       ctx.beginPath();
       ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
       ctx.fill();
@@ -319,22 +284,21 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Procedural Photorealistic Cloud Texture
+   * Procedural Cloud Texture
    */
-  generatePhotorealisticCloudCanvas() {
+  generateCloudCanvas() {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, 1024, 512);
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.38)";
     for (let i = 0; i < 90; i++) {
       const cx = Math.random() * 1024;
       const cy = Math.random() * 512;
       const rw = 50 + Math.random() * 160;
       const rh = 18 + Math.random() * 50;
-
       ctx.beginPath();
       ctx.ellipse(cx, cy, rw, rh, (Math.random() - 0.5) * 0.3, 0, Math.PI * 2);
       ctx.fill();
@@ -343,172 +307,185 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Builds the Realistic Physical Spacecraft Cockpit & Command Deck
+   * Build Interstellar Spacecraft Cockpit (Endurance / Ranger White & Black Aesthetic)
    */
-  buildCockpitInterior() {
+  buildInterstellarCockpit() {
     this.cockpitGroup = new THREE.Group();
     this.scene.add(this.cockpitGroup);
 
-    // 1. Cockpit Hull Materials (Matte Titanium, Carbon Fiber & Dark Aluminum)
-    const hullMat = new THREE.MeshStandardMaterial({
+    // 1. PBR Materials (Interstellar White Ceramic & Obsidian Titanium)
+    const whiteCeramicMat = new THREE.MeshStandardMaterial({
+      color: 0xf3f6fa,
+      roughness: 0.35,
+      metalness: 0.4,
+    });
+
+    const obsidianRibMat = new THREE.MeshStandardMaterial({
+      color: 0x090d14,
+      roughness: 0.7,
+      metalness: 0.85,
+    });
+
+    const carbonDeskMat = new THREE.MeshStandardMaterial({
       color: 0x111622,
-      roughness: 0.75,
-      metalness: 0.65,
+      roughness: 0.5,
+      metalness: 0.75,
     });
 
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x1c2436,
-      roughness: 0.6,
-      metalness: 0.8,
-    });
-
-    const metalTrimMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
+    const metalBezelMat = new THREE.MeshStandardMaterial({
+      color: 0x1a2334,
       roughness: 0.4,
       metalness: 0.9,
     });
 
-    // 2. Cockpit Structural Arch & Cylindrical Pressure Hull
-    const hullGeo = new THREE.CylinderGeometry(8, 8, 28, 32, 1, true, -Math.PI / 2, Math.PI);
+    // 2. Interstellar Endurance Hull (White Ceramic Shell with Black Compression Ribs)
+    const hullGeo = new THREE.CylinderGeometry(8.2, 8.2, 32, 32, 1, true, -Math.PI / 2, Math.PI);
     hullGeo.rotateZ(Math.PI / 2);
-    hullGeo.translate(0, 2, 0);
-    const hullMesh = new THREE.Mesh(hullGeo, hullMat);
+    hullGeo.translate(0, 2.2, 0);
+    const hullMesh = new THREE.Mesh(hullGeo, whiteCeramicMat);
     this.cockpitGroup.add(hullMesh);
 
-    // 3. Structural Bulkhead Ribs
-    for (let z = -8; z <= 12; z += 4) {
-      const ribGeo = new THREE.TorusGeometry(7.8, 0.18, 12, 32, Math.PI);
+    // Black Structural Arch Ribs
+    for (let z = -10; z <= 14; z += 3.5) {
+      const ribGeo = new THREE.TorusGeometry(8.05, 0.22, 12, 32, Math.PI);
       ribGeo.rotateX(Math.PI / 2);
-      ribGeo.translate(0, 2, z);
-      const ribMesh = new THREE.Mesh(ribGeo, frameMat);
+      ribGeo.translate(0, 2.2, z);
+      const ribMesh = new THREE.Mesh(ribGeo, obsidianRibMat);
       this.cockpitGroup.add(ribMesh);
     }
 
-    // 4. Realistic Forward Observation Cupola / Viewport Window Frame
-    const cupolaRingGeo = new THREE.RingGeometry(4.8, 5.6, 24);
-    cupolaRingGeo.translate(0, 1.8, -10.5);
-    const cupolaRing = new THREE.Mesh(cupolaRingGeo, frameMat);
+    // 3. Octagonal Endurance Airlock Hatch (Rear Entrance at z = 14)
+    const airlockFrameGeo = new THREE.RingGeometry(3.6, 4.5, 8);
+    airlockFrameGeo.translate(0, 1.8, 14.2);
+    const airlockFrame = new THREE.Mesh(airlockFrameGeo, obsidianRibMat);
+    this.cockpitGroup.add(airlockFrame);
+
+    // 4. Observation Cupola / Forward Viewport Window
+    const cupolaRingGeo = new THREE.RingGeometry(4.8, 5.8, 12);
+    cupolaRingGeo.translate(0, 1.8, -11.2);
+    const cupolaRing = new THREE.Mesh(cupolaRingGeo, obsidianRibMat);
     this.cockpitGroup.add(cupolaRing);
 
-    // Viewport Glass with Subtle Reflection
-    const glassGeo = new THREE.CircleGeometry(4.8, 24);
-    glassGeo.translate(0, 1.8, -10.45);
+    // Viewport Glass
+    const glassGeo = new THREE.CircleGeometry(4.8, 16);
+    glassGeo.translate(0, 1.8, -11.15);
     const glassMat = new THREE.MeshStandardMaterial({
       color: 0x38bdf8,
-      roughness: 0.1,
+      roughness: 0.05,
       metalness: 0.95,
       transparent: true,
       opacity: 0.12,
     });
-    const glassMesh = new THREE.Mesh(glassGeo, glassMat);
-    this.cockpitGroup.add(glassMesh);
+    const glass = new THREE.Mesh(glassGeo, glassMat);
+    this.cockpitGroup.add(glass);
 
-    // 5. Cockpit Command Desk / Workstation Console Table
-    const consoleGeo = new THREE.BoxGeometry(6.4, 0.8, 2.2);
-    consoleGeo.translate(0, -0.4, 0.8);
-    const consoleTable = new THREE.Mesh(consoleGeo, frameMat);
-    this.cockpitGroup.add(consoleTable);
+    // 5. Ranger Flight Console Desk (Carbon Surface & White PBR Trim)
+    const deskGeo = new THREE.BoxGeometry(6.8, 0.85, 2.4);
+    deskGeo.translate(0, -0.42, 0.8);
+    const deskMesh = new THREE.Mesh(deskGeo, carbonDeskMat);
+    this.cockpitGroup.add(deskMesh);
 
-    // Metallic Upper Console Dashboard
-    const dashGeo = new THREE.BoxGeometry(6.2, 0.25, 0.8);
-    dashGeo.rotateX(-Math.PI / 8);
-    dashGeo.translate(0, 0.05, 0.2);
-    const dashMesh = new THREE.Mesh(dashGeo, metalTrimMat);
-    this.cockpitGroup.add(dashMesh);
+    const deskTrimGeo = new THREE.BoxGeometry(7.0, 0.15, 2.5);
+    deskTrimGeo.translate(0, -0.85, 0.8);
+    const deskTrim = new THREE.Mesh(deskTrimGeo, whiteCeramicMat);
+    this.cockpitGroup.add(deskTrim);
 
-    // Physical Hardware Status LED Indicators on Console
-    const ledColors = [0x10b981, 0x06b6d4, 0xf59e0b, 0x3b82f6];
-    for (let i = 0; i < 6; i++) {
-      const ledGeo = new THREE.SphereGeometry(0.04, 8, 8);
-      const c = ledColors[i % ledColors.length];
-      const ledMat = new THREE.MeshBasicMaterial({ color: c });
-      const led = new THREE.Mesh(ledGeo, ledMat);
-      led.position.set(-2.2 + i * 0.9, 0.15, 0.4);
-      this.cockpitGroup.add(led);
-    }
+    // 6. Dual Pilot Flight Sticks / Joysticks (Ranger Style)
+    const buildJoystick = (xPos) => {
+      const stickGroup = new THREE.Group();
+      const baseGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.1, 16);
+      const baseMesh = new THREE.Mesh(baseGeo, obsidianRibMat);
+      stickGroup.add(baseMesh);
 
-    // 6. Realistic Multi-Monitor Physical Mounting Bezels
-    const createMonitorBezel = (x, y, z, rotY) => {
-      const monitorGroup = new THREE.Group();
-      // Outer Chamfered Bezel
-      const bezelGeo = new THREE.BoxGeometry(2.1, 1.35, 0.08);
-      const bezelMesh = new THREE.Mesh(bezelGeo, frameMat);
-      monitorGroup.add(bezelMesh);
+      const poleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.45, 12);
+      poleGeo.translate(0, 0.22, 0);
+      const poleMesh = new THREE.Mesh(poleGeo, metalBezelMat);
+      stickGroup.add(poleMesh);
 
-      // Inner LCD Screen Plane (Matte Glass)
-      const screenGeo = new THREE.PlaneGeometry(1.98, 1.22);
-      screenGeo.translate(0, 0, 0.045);
-      const screenMat = new THREE.MeshStandardMaterial({
-        color: 0x070d18,
-        roughness: 0.2,
-        metalness: 0.8,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.15,
-      });
-      const screenMesh = new THREE.Mesh(screenGeo, screenMat);
-      monitorGroup.add(screenMesh);
+      const gripGeo = new THREE.BoxGeometry(0.12, 0.24, 0.14);
+      gripGeo.translate(0, 0.45, 0);
+      const gripMesh = new THREE.Mesh(gripGeo, obsidianRibMat);
+      stickGroup.add(gripMesh);
 
-      // Power LED
-      const pwrGeo = new THREE.CircleGeometry(0.015, 8);
-      pwrGeo.translate(0.9, -0.62, 0.045);
-      const pwrMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
-      const pwrLed = new THREE.Mesh(pwrGeo, pwrMat);
-      monitorGroup.add(pwrLed);
-
-      monitorGroup.position.set(x, y, z);
-      monitorGroup.rotation.y = rotY;
-      return monitorGroup;
+      stickGroup.position.set(xPos, 0.05, 1.2);
+      this.cockpitGroup.add(stickGroup);
+      this.joysticks.push(stickGroup);
     };
 
-    // Center Main Mission Display Frame
-    const centerDisplay = createMonitorBezel(0, 0.85, -0.2, 0);
-    this.cockpitGroup.add(centerDisplay);
+    buildJoystick(-1.6); // Commander station joystick
+    buildJoystick(1.6);  // Pilot station joystick
 
-    // Left Display Frame (Angled 18 deg)
-    const leftDisplay = createMonitorBezel(-2.2, 0.85, 0.15, Math.PI / 10);
-    this.cockpitGroup.add(leftDisplay);
+    // 7. Mechanical Articulating Monitor Support Arms
+    const createMonitorArm = (x, y, z, rotY) => {
+      const armGroup = new THREE.Group();
+      const mountGeo = new THREE.BoxGeometry(0.15, 0.15, 0.8);
+      const mountMesh = new THREE.Mesh(mountGeo, metalBezelMat);
+      armGroup.add(mountMesh);
 
-    // Right Display Frame (Angled -18 deg)
-    const rightDisplay = createMonitorBezel(2.2, 0.85, 0.15, -Math.PI / 10);
-    this.cockpitGroup.add(rightDisplay);
+      armGroup.position.set(x, y, z);
+      armGroup.rotation.y = rotY;
+      this.cockpitGroup.add(armGroup);
+    };
 
-    // 7. Interior Cockpit Warm / Cool Lighting
-    const cockpitWarmLight = new THREE.PointLight(0xffeedd, 1.2, 10);
-    cockpitWarmLight.position.set(0, 3.2, 2.0);
-    this.scene.add(cockpitWarmLight);
+    createMonitorArm(-2.2, 0.85, -0.2, Math.PI / 10);
+    createMonitorArm(0, 0.85, -0.4, 0);
+    createMonitorArm(2.2, 0.85, -0.2, -Math.PI / 10);
 
-    const cockpitConsoleGlow = new THREE.PointLight(0x38bdf8, 1.8, 6);
-    cockpitConsoleGlow.position.set(0, 1.0, 0.5);
-    this.scene.add(cockpitConsoleGlow);
+    // 8. Interstellar Tactical Cockpit Lighting (Cool White Key Light + Cyan/Amber Telemetry Glare)
+    const keyLight = new THREE.PointLight(0xffffff, 1.4, 12);
+    keyLight.position.set(0, 3.4, 1.5);
+    this.scene.add(keyLight);
 
-    const airlockLight = new THREE.PointLight(0xf59e0b, 1.0, 8);
-    airlockLight.position.set(0, 2.5, 12.0);
-    this.scene.add(airlockLight);
+    const consoleGlare = new THREE.PointLight(0x38bdf8, 2.0, 5);
+    consoleGlare.position.set(0, 0.9, 0.4);
+    this.scene.add(consoleGlare);
+
+    const airlockAmberLight = new THREE.PointLight(0xf59e0b, 1.2, 8);
+    airlockAmberLight.position.set(0, 2.6, 13.0);
+    this.scene.add(airlockAmberLight);
   }
 
   /**
-   * Build Orbiting Satellites
+   * Build Orbiting Satellites and the Rotating Endurance Spacecraft Ring
    */
   buildSatellites() {
     this.satellites = [];
+
+    // 1. Rotating Endurance 12-Module Ring Structure
+    const ringGroup = new THREE.Group();
+    const moduleCount = 12;
+    const ringRadius = 5.2;
+
+    const modGeo = new THREE.BoxGeometry(1.2, 0.8, 1.4);
+    const modWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.5, roughness: 0.3 });
+    const modBlackMat = new THREE.MeshStandardMaterial({ color: 0x090e18, metalness: 0.8, roughness: 0.6 });
+
+    for (let i = 0; i < moduleCount; i++) {
+      const angle = (i / moduleCount) * Math.PI * 2;
+      const x = Math.cos(angle) * ringRadius;
+      const y = Math.sin(angle) * ringRadius;
+
+      const mod = new THREE.Mesh(modGeo, i % 2 === 0 ? modWhiteMat : modBlackMat);
+      mod.position.set(x, y, 0);
+      mod.rotation.z = angle + Math.PI / 2;
+      ringGroup.add(mod);
+    }
+
+    ringGroup.position.set(18, 12, -45);
+    ringGroup.rotation.x = Math.PI / 4;
+    this.scene.add(ringGroup);
+    this.enduranceRing = ringGroup;
+
+    // 2. Scientific Orbiting Satellites
     this.satelliteSpecs.forEach((spec) => {
       const satGroup = new THREE.Group();
-
       const bodyGeo = new THREE.BoxGeometry(0.3, 0.3, 0.5);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: spec.color,
-        metalness: 0.9,
-        roughness: 0.2,
-      });
+      const bodyMat = new THREE.MeshStandardMaterial({ color: spec.color, metalness: 0.9, roughness: 0.2 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       satGroup.add(body);
 
-      const panelGeo = new THREE.BoxGeometry(1.4, 0.03, 0.4);
-      const panelMat = new THREE.MeshStandardMaterial({
-        color: 0x1e3a8a,
-        metalness: 0.8,
-        roughness: 0.3,
-      });
+      const panelGeo = new THREE.BoxGeometry(1.5, 0.03, 0.4);
+      const panelMat = new THREE.MeshStandardMaterial({ color: 0x090e18, metalness: 0.8, roughness: 0.3 });
       const panels = new THREE.Mesh(panelGeo, panelMat);
       satGroup.add(panels);
 
@@ -526,9 +503,13 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Updates Satellite Positions
+   * Updates Satellites and Rotating Ring
    */
   updateSatellites() {
+    if (this.enduranceRing) {
+      this.enduranceRing.rotation.z += 0.003; // Interstellar artificial gravity spin
+    }
+
     this.satellites.forEach((sat) => {
       sat.angle += sat.speed;
       const x = Math.cos(sat.angle) * sat.radius;
@@ -540,7 +521,7 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Cinematic Camera Transition: Enter Cockpit from Airlock
+   * Cinematic Camera Flight: Enter Cockpit from Airlock
    */
   enterCockpit(callback) {
     this.playAudio("airlock");
@@ -551,21 +532,22 @@ class SatQuery3DDeck {
     this.camStartLook.copy(this.posAirlock.look);
     this.camEndLook.copy(this.posWorkstation.look);
 
-    this.camTransitionProgress = 0;
-
     const startT = performance.now();
-    const duration = 2400; // 2.4s smooth cinematic glide
+    const duration = 2400;
 
     const animateTransition = (now) => {
       const elapsed = now - startT;
       const t = Math.min(1, elapsed / duration);
-      // Ease In Out Cubic
       const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
       this.camera.position.lerpVectors(this.camStartPos, this.camEndPos, ease);
-
       const curLook = new THREE.Vector3().lerpVectors(this.camStartLook, this.camEndLook, ease);
       this.camera.lookAt(curLook);
+
+      // Broadcast flight progress to 3D CSS Dashboard for matching zoom/docking
+      if (this.onMotionUpdate) {
+        this.onMotionUpdate(t, "TRANSITION");
+      }
 
       if (t < 1) {
         requestAnimationFrame(animateTransition);
@@ -580,7 +562,7 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Cinematic Camera Transition: Exit back to Airlock
+   * Cinematic Camera Flight: Exit back to Airlock
    */
   exitToAirlock(callback) {
     this.playAudio("airlock");
@@ -603,6 +585,10 @@ class SatQuery3DDeck {
       const curLook = new THREE.Vector3().lerpVectors(this.camStartLook, this.camEndLook, ease);
       this.camera.lookAt(curLook);
 
+      if (this.onMotionUpdate) {
+        this.onMotionUpdate(1 - t, "EXIT");
+      }
+
       if (t < 1) {
         requestAnimationFrame(animateExit);
       } else {
@@ -615,14 +601,13 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Look directly out the orbital observation viewport
+   * Look directly out Viewport
    */
   lookAtViewport() {
     this.playAudio("chirp");
     this.cameraState = "TRANSITION";
     this.camStartPos.copy(this.camera.position);
     this.camEndPos.copy(this.posViewport.pos);
-
     this.camStartLook.copy(this.posWorkstation.look);
     this.camEndLook.copy(this.posViewport.look);
 
@@ -655,8 +640,7 @@ class SatQuery3DDeck {
     this.cameraState = "TRANSITION";
     this.camStartPos.copy(this.camera.position);
     this.camEndPos.copy(this.posWorkstation.pos);
-
-    this.camStartLook.copy(this.cameraState === "VIEWPORT" ? this.posViewport.look : this.posAirlock.look);
+    this.camStartLook.copy(this.posViewport.look);
     this.camEndLook.copy(this.posWorkstation.look);
 
     const startT = performance.now();
@@ -681,7 +665,7 @@ class SatQuery3DDeck {
   }
 
   /**
-   * Procedural Web Audio FX Synthesizer
+   * Synthesized Web Audio FX
    */
   playAudio(type = "chirp") {
     if (!this.soundEnabled) return;
@@ -694,42 +678,36 @@ class SatQuery3DDeck {
       const now = this.audioCtx.currentTime;
 
       if (type === "airlock") {
-        // Atmospheric Decompression / Door Slide Hiss
-        const bufferSize = this.audioCtx.sampleRate * 1.5;
+        const bufferSize = this.audioCtx.sampleRate * 1.6;
         const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          output[i] = Math.random() * 2 - 1;
-        }
+        for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
 
         const whiteNoise = this.audioCtx.createBufferSource();
         whiteNoise.buffer = noiseBuffer;
 
         const filter = this.audioCtx.createBiquadFilter();
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(800, now);
-        filter.frequency.exponentialRampToValueAtTime(150, now + 1.4);
+        filter.frequency.setValueAtTime(900, now);
+        filter.frequency.exponentialRampToValueAtTime(140, now + 1.5);
 
         const gain = this.audioCtx.createGain();
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.4);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
 
         whiteNoise.connect(filter);
         filter.connect(gain);
         gain.connect(this.audioCtx.destination);
-
         whiteNoise.start(now);
-        whiteNoise.stop(now + 1.5);
+        whiteNoise.stop(now + 1.6);
       } else if (type === "boot") {
-        // High-Tech Workstation Boot Chime (C-Major 7th Harmonic Sweep)
-        const freqs = [523.25, 659.25, 783.99, 1046.50];
-        freqs.forEach((freq, idx) => {
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
           const osc = this.audioCtx.createOscillator();
           const gain = this.audioCtx.createGain();
           osc.type = "sine";
           osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
-          gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.18, now + idx * 0.08);
           gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.6);
 
           osc.connect(gain);
@@ -738,12 +716,11 @@ class SatQuery3DDeck {
           osc.stop(now + idx * 0.08 + 0.65);
         });
       } else if (type === "chirp") {
-        // Tactile Mechanical / Electronic Beep
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+        osc.frequency.setValueAtTime(1100, now);
+        osc.frequency.exponentialRampToValueAtTime(750, now + 0.06);
 
         gain.gain.setValueAtTime(0.15, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
@@ -753,13 +730,11 @@ class SatQuery3DDeck {
         osc.start(now);
         osc.stop(now + 0.09);
       }
-    } catch (e) {
-      // Audio safety fallback
-    }
+    } catch (e) {}
   }
 
   /**
-   * Bind Mouse Parallax & Resize Listeners
+   * Bind Mouse Parallax & Resize
    */
   bindEvents() {
     window.addEventListener("resize", () => {
@@ -778,32 +753,51 @@ class SatQuery3DDeck {
   }
 
   /**
-   * 60FPS Main Render Loop
+   * Main Render Loop (60 FPS) with 3D Motion Broadcasting
    */
   animate() {
     this.animId = requestAnimationFrame(() => this.animate());
+    const time = this.clock.getElapsedTime();
 
-    // Earth Orbital Rotation
-    if (this.earthGroup) {
-      this.earthGroup.rotation.y += 0.0008;
-    }
-    if (this.cloudsMesh) {
-      this.cloudsMesh.rotation.y += 0.0011;
-    }
+    // 1. Earth & Clouds Orbital Drift
+    if (this.earthGroup) this.earthGroup.rotation.y += 0.0006;
+    if (this.cloudsMesh) this.cloudsMesh.rotation.y += 0.0009;
 
-    // Satellites
+    // 2. Satellites & Endurance Ring
     this.updateSatellites();
 
-    // Subtle Cockpit Mouse Parallax
-    this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.05;
-    this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.05;
+    // 3. Smooth Mouse Parallax Interpolation
+    this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.06;
+    this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.06;
 
+    // 4. Subtle Microgravity Zero-G Floating Sway
+    const swayX = Math.sin(time * 0.8) * 0.03;
+    const swayY = Math.cos(time * 0.6) * 0.025;
+
+    // Move Joysticks slightly with sway
+    this.joysticks.forEach((j, i) => {
+      j.rotation.x = (i === 0 ? this.mouse.y : -this.mouse.y) * 0.15 + swayY;
+      j.rotation.z = this.mouse.x * 0.15 + swayX;
+    });
+
+    // 5. Position Camera based on State
     if (this.cameraState === "WORKSTATION") {
-      this.camera.position.x = this.posWorkstation.pos.x + this.mouse.x * 0.12;
-      this.camera.position.y = this.posWorkstation.pos.y - this.mouse.y * 0.08;
+      this.camera.position.x = this.posWorkstation.pos.x + this.mouse.x * 0.15 + swayX;
+      this.camera.position.y = this.posWorkstation.pos.y - this.mouse.y * 0.1 + swayY;
     } else if (this.cameraState === "AIRLOCK") {
-      this.camera.position.x = this.posAirlock.pos.x + this.mouse.x * 0.25;
-      this.camera.position.y = this.posAirlock.pos.y - this.mouse.y * 0.15;
+      this.camera.position.x = this.posAirlock.pos.x + this.mouse.x * 0.3 + swayX;
+      this.camera.position.y = this.posAirlock.pos.y - this.mouse.y * 0.2 + swayY;
+    }
+
+    // 6. Broadcast 3D Parallax & Motion to Front Dashboard
+    if (this.onMotionUpdate && (this.cameraState === "WORKSTATION" || this.cameraState === "AIRLOCK")) {
+      this.onMotionUpdate({
+        mouseX: this.mouse.x,
+        mouseY: this.mouse.y,
+        swayX: swayX,
+        swayY: swayY,
+        state: this.cameraState
+      });
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -811,9 +805,7 @@ class SatQuery3DDeck {
 
   destroy() {
     if (this.animId) cancelAnimationFrame(this.animId);
-    if (this.renderer && this.renderer.domElement) {
-      this.renderer.domElement.remove();
-    }
+    if (this.renderer && this.renderer.domElement) this.renderer.domElement.remove();
     this.isInitialized = false;
   }
 }
